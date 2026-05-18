@@ -2,9 +2,45 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using TMPro;
 
 public static class SceneSetup
 {
+    // ── 한글 폰트 에셋 자동 생성 ─────────────────────────────────
+    [MenuItem("Game-M/0. Setup Korean Font")]
+    static void SetupKoreanFont()
+    {
+        const string srcFont = @"C:\Windows\Fonts\malgun.ttf";
+        const string dstFont = "Assets/Fonts/malgun.ttf";
+        const string assetPath = "Assets/Resources/KoreanFont.asset";
+
+        if (!System.IO.File.Exists(srcFont))
+        {
+            Debug.LogError("맑은 고딕을 찾을 수 없습니다: " + srcFont);
+            return;
+        }
+
+        System.IO.Directory.CreateDirectory("Assets/Fonts");
+        System.IO.Directory.CreateDirectory("Assets/Resources");
+
+        if (!System.IO.File.Exists(dstFont))
+            System.IO.File.Copy(srcFont, dstFont);
+
+        AssetDatabase.ImportAsset(dstFont);
+        var font = AssetDatabase.LoadAssetAtPath<Font>(dstFont);
+        if (font == null) { Debug.LogError("폰트 임포트 실패"); return; }
+
+        // Dynamic 모드: 런타임에 한글 글리프를 atlas에 자동 추가
+        var fontAsset = TMP_FontAsset.CreateFontAsset(
+            font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
+            AtlasPopulationMode.Dynamic);
+
+        AssetDatabase.CreateAsset(fontAsset, assetPath);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("한글 폰트 에셋 생성 완료 → " + assetPath);
+    }
+
     // ── Main 씬 세팅 (슬라임 월드) ───────────────────────────────
     [MenuItem("Game-M/Setup Scene")]
     static void Setup()
