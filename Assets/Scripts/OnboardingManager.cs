@@ -224,6 +224,11 @@ public class OnboardingManager : MonoBehaviour
         return go;
     }
 
+    static TMP_FontAsset LoadKoreanFont()
+    {
+        return Resources.Load<TMP_FontAsset>("KoreanFont");
+    }
+
     static TextMeshProUGUI MakeTMP(Transform parent, string name, float size)
     {
         var go = new GameObject(name);
@@ -232,6 +237,8 @@ public class OnboardingManager : MonoBehaviour
         var tmp = go.AddComponent<TextMeshProUGUI>();
         tmp.fontSize = size;
         tmp.color    = Color.white;
+        var font = LoadKoreanFont();
+        if (font != null) tmp.font = font;
         return tmp;
     }
 
@@ -262,6 +269,8 @@ public class OnboardingManager : MonoBehaviour
         lbl.fontSize  = 18f;
         lbl.color     = Color.white;
         lbl.alignment = TextAlignmentOptions.Center;
+        var font = LoadKoreanFont();
+        if (font != null) lbl.font = font;
         SetAnchors(lbl.rectTransform, 0f, 0f, 1f, 1f);
 
         return (btn, lbl);
