@@ -1,0 +1,28 @@
+# Unity
+Library/
+Temp/
+Logs/
+obj/
+Builds/
+UserSettings/
+MemoryCaptures/
+.vsconfig
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.unityproj
+.DS_Store
+thumbs.db
+
+# Unity build output (copied to vite-app/public/unity)
+vite-app/public/unity/
+
+# Vite / Node
+vite-app/node_modules/
+vite-app/dist/
+vite-app/.env
+vite-app/.env.local
