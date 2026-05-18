@@ -59,6 +59,17 @@ public static class SceneSetup
         Debug.Log("한글 폰트 에셋 생성 완료 → " + assetPath);
     }
 
+    // ── 온보딩 PlayerPrefs 리셋 (테스트용) ──────────────────────
+    [MenuItem("Game-M/Reset Onboarding PlayerPrefs")]
+    static void ResetOnboarding()
+    {
+        PlayerPrefs.DeleteKey("onboarding_done");
+        PlayerPrefs.DeleteKey("first_slime_text");
+        PlayerPrefs.DeleteKey("first_slime_expression");
+        PlayerPrefs.Save();
+        Debug.Log("온보딩 PlayerPrefs 리셋 완료");
+    }
+
     // ── Main 씬 세팅 (슬라임 월드) ───────────────────────────────
     [MenuItem("Game-M/Setup Scene")]
     static void Setup()
