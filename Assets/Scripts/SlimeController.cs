@@ -47,7 +47,7 @@ public class SlimeController : MonoBehaviour
     {
         SlimeId         = id;
         SlimeExpression = expression;
-        sr.color        = color;
+        sr.color        = Color.white;
         originalSize         = worldSize;
         targetScale          = Vector3.one * worldSize;
         transform.localScale = targetScale;
