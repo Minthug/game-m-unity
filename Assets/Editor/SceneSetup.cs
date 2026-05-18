@@ -35,6 +35,25 @@ public static class SceneSetup
         fontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
 
         AssetDatabase.CreateAsset(fontAsset, assetPath);
+
+        // atlas 텍스처와 material을 sub-asset으로 저장 (없으면 런타임 에러)
+        if (fontAsset.atlasTextures != null)
+        {
+            foreach (var tex in fontAsset.atlasTextures)
+            {
+                if (tex != null)
+                {
+                    tex.name = "Atlas";
+                    AssetDatabase.AddObjectToAsset(tex, fontAsset);
+                }
+            }
+        }
+        if (fontAsset.material != null)
+        {
+            fontAsset.material.name = "Atlas Material";
+            AssetDatabase.AddObjectToAsset(fontAsset.material, fontAsset);
+        }
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("한글 폰트 에셋 생성 완료 → " + assetPath);
