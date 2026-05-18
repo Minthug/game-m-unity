@@ -23,4 +23,12 @@ mergeInto(LibraryManager.library, {
       window.onUnityMessage(JSON.stringify({ type: 'storage_get', key: key }));
     }
   },
+
+  // Unity → Web: 텍스트 입력창 요청 (온보딩 마지막 단계)
+  RequestTextInputJS: function(placeholderPtr) {
+    var placeholder = UTF8ToString(placeholderPtr);
+    if (window.onUnityMessage) {
+      window.onUnityMessage(JSON.stringify({ type: 'request_text_input', placeholder: placeholder }));
+    }
+  },
 });

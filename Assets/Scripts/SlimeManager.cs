@@ -39,6 +39,23 @@ public class SlimeManager : MonoBehaviour
         Instance = this;
     }
 
+    void Start()
+    {
+        var text = PlayerPrefs.GetString("first_slime_text", "");
+        if (string.IsNullOrEmpty(text)) return;
+
+        var req = new SlimeCreateRequest
+        {
+            id         = "slime-first",
+            text       = text,
+            expression = PlayerPrefs.GetString("first_slime_expression", "blank"),
+            size       = 72f,
+        };
+        CreateSlimeFromWeb(JsonUtility.ToJson(req));
+        PlayerPrefs.DeleteKey("first_slime_text");
+        PlayerPrefs.DeleteKey("first_slime_expression");
+    }
+
     // ── React → Unity 진입점 ──────────────────────────────────
 
     // SendMessage("SlimeManager", "CreateSlimeFromWeb", "{...json...}")

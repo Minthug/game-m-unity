@@ -1,8 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 
 public static class SceneSetup
 {
+    // ── Main 씬 세팅 (슬라임 월드) ───────────────────────────────
     [MenuItem("Game-M/Setup Scene")]
     static void Setup()
     {
@@ -23,9 +26,9 @@ public static class SceneSetup
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer != null && importer.textureType != TextureImporterType.Sprite)
             {
-                importer.textureType      = TextureImporterType.Sprite;
+                importer.textureType         = TextureImporterType.Sprite;
                 importer.spritePixelsPerUnit = 100;
-                importer.filterMode       = FilterMode.Bilinear;
+                importer.filterMode          = FilterMode.Bilinear;
                 AssetDatabase.ImportAsset(path);
             }
         }
@@ -50,30 +53,24 @@ public static class SceneSetup
         Object.DestroyImmediate(slimeGO);
         Debug.Log("Slime Prefab 생성 완료");
 
-        // 3. SlimeManager 오브젝트 생성 (씬에 없으면)
-        var existing = Object.FindFirstObjectByType<SlimeManager>();
-        var managerGO = existing != null
-            ? existing.gameObject
-            : new GameObject("SlimeManager");
+        // 3. SlimeManager 오브젝트 생성
+        var existing  = Object.FindFirstObjectByType<SlimeManager>();
+        var managerGO = existing != null ? existing.gameObject : new GameObject("SlimeManager");
+        var manager   = managerGO.GetComponent<SlimeManager>() ?? managerGO.AddComponent<SlimeManager>();
 
-        var manager = managerGO.GetComponent<SlimeManager>()
-                      ?? managerGO.AddComponent<SlimeManager>();
-
-        manager.slimePrefab      = prefab;
-        manager.spriteAngry      = LoadSprite("Assets/Slimes/slime-angry.png");
-        manager.spriteSad        = LoadSprite("Assets/Slimes/slime-sad.png");
-        manager.spriteFear       = LoadSprite("Assets/Slimes/slime-fear.png");
-        manager.spriteHappy      = LoadSprite("Assets/Slimes/slime-happy.png");
-        manager.spriteDisgust    = LoadSprite("Assets/Slimes/slime-disgust.png");
-        manager.spriteSurprised  = LoadSprite("Assets/Slimes/slime-surprised.png");
-        manager.spriteContempt   = LoadSprite("Assets/Slimes/slime-contempt.png");
-        manager.spriteBlank      = LoadSprite("Assets/Slimes/slime-blank.png");
+        manager.slimePrefab     = prefab;
+        manager.spriteAngry     = LoadSprite("Assets/Slimes/slime-angry.png");
+        manager.spriteSad       = LoadSprite("Assets/Slimes/slime-sad.png");
+        manager.spriteFear      = LoadSprite("Assets/Slimes/slime-fear.png");
+        manager.spriteHappy     = LoadSprite("Assets/Slimes/slime-happy.png");
+        manager.spriteDisgust   = LoadSprite("Assets/Slimes/slime-disgust.png");
+        manager.spriteSurprised = LoadSprite("Assets/Slimes/slime-surprised.png");
+        manager.spriteContempt  = LoadSprite("Assets/Slimes/slime-contempt.png");
+        manager.spriteBlank     = LoadSprite("Assets/Slimes/slime-blank.png");
 
         // 4. BackgroundManager 생성
         var existingBg = Object.FindFirstObjectByType<BackgroundManager>();
-        var bgGO = existingBg != null
-            ? existingBg.gameObject
-            : new GameObject("BackgroundManager");
+        var bgGO       = existingBg != null ? existingBg.gameObject : new GameObject("BackgroundManager");
         if (bgGO.GetComponent<BackgroundManager>() == null)
             bgGO.AddComponent<BackgroundManager>();
 
@@ -84,11 +81,60 @@ public static class SceneSetup
             Camera.main.clearFlags      = CameraClearFlags.SolidColor;
         }
 
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
-            UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
-
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         AssetDatabase.SaveAssets();
         Debug.Log("씬 세팅 완료! SlimeManager와 Slime Prefab이 준비됐어요.");
+    }
+
+    // ── 현재 씬을 Main으로 저장 ──────────────────────────────────
+    [MenuItem("Game-M/1. Save As Main Scene")]
+    static void SaveAsMain()
+    {
+        System.IO.Directory.CreateDirectory("Assets/Scenes");
+        EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), "Assets/Scenes/Main.unity");
+        UpdateBuildSettings();
+        Debug.Log("Main 씬 저장 완료 (Assets/Scenes/Main.unity)");
+    }
+
+    // ── Onboarding 씬 생성 ───────────────────────────────────────
+    [MenuItem("Game-M/2. Setup Onboarding Scene")]
+    static void SetupOnboarding()
+    {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+        // 카메라
+        var camGO = new GameObject("Main Camera");
+        camGO.tag = "MainCamera";
+        var cam = camGO.AddComponent<Camera>();
+        cam.orthographic     = true;
+        cam.orthographicSize = 5f;
+        cam.clearFlags       = CameraClearFlags.SolidColor;
+        cam.depth            = -1;
+        ColorUtility.TryParseHtmlString("#0A0A0F", out var bgColor);
+        cam.backgroundColor = bgColor;
+
+        // OnboardingManager (UI·파티클은 런타임에 자체 생성)
+        var managerGO = new GameObject("OnboardingManager");
+        managerGO.AddComponent<OnboardingManager>();
+
+        System.IO.Directory.CreateDirectory("Assets/Scenes");
+        EditorSceneManager.SaveScene(scene, "Assets/Scenes/Onboarding.unity");
+        UpdateBuildSettings();
+        AssetDatabase.Refresh();
+        Debug.Log("Onboarding 씬 생성 완료 (Assets/Scenes/Onboarding.unity)");
+    }
+
+    // ── Build Settings 업데이트 ──────────────────────────────────
+    static void UpdateBuildSettings()
+    {
+        var scenes = new List<EditorBuildSettingsScene>();
+        if (System.IO.File.Exists("Assets/Scenes/Onboarding.unity"))
+            scenes.Add(new EditorBuildSettingsScene("Assets/Scenes/Onboarding.unity", true));
+        if (System.IO.File.Exists("Assets/Scenes/Main.unity"))
+            scenes.Add(new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true));
+        EditorBuildSettings.scenes = scenes.ToArray();
     }
 
     static Sprite LoadSprite(string path) =>
