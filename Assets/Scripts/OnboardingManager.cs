@@ -200,6 +200,7 @@ public class OnboardingManager : MonoBehaviour
         vel.space   = ParticleSystemSimulationSpace.World;
         vel.x       = new ParticleSystem.MinMaxCurve(-0.05f, 0.05f);
         vel.y       = new ParticleSystem.MinMaxCurve(0.03f, 0.10f);
+        vel.z       = new ParticleSystem.MinMaxCurve(0f, 0f);
 
         var fade = ps.colorOverLifetime;
         fade.enabled = true;

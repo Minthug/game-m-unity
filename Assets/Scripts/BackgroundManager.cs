@@ -99,6 +99,7 @@ public class BackgroundManager : MonoBehaviour
         vel.space   = ParticleSystemSimulationSpace.World;
         vel.x       = new ParticleSystem.MinMaxCurve(-0.05f, 0.05f);
         vel.y       = new ParticleSystem.MinMaxCurve(0.05f, 0.15f);
+        vel.z       = new ParticleSystem.MinMaxCurve(0f, 0f);
 
         var fade = ps.colorOverLifetime;
         fade.enabled = true;
@@ -141,6 +142,8 @@ public class BackgroundManager : MonoBehaviour
         vel.enabled = true;
         vel.space   = ParticleSystemSimulationSpace.World;
         vel.x       = new ParticleSystem.MinMaxCurve(-0.08f, 0.08f);
+        vel.y       = new ParticleSystem.MinMaxCurve(0f, 0f);
+        vel.z       = new ParticleSystem.MinMaxCurve(0f, 0f);
 
         SetFade(ps);
         ps.Play();
@@ -177,6 +180,8 @@ public class BackgroundManager : MonoBehaviour
         vel.enabled = true;
         vel.space   = ParticleSystemSimulationSpace.World;
         vel.x       = new ParticleSystem.MinMaxCurve(-0.3f, 0.3f);
+        vel.y       = new ParticleSystem.MinMaxCurve(0f, 0f);
+        vel.z       = new ParticleSystem.MinMaxCurve(0f, 0f);
 
         SetFade(ps);
         ps.Play();
@@ -249,6 +254,7 @@ public class BackgroundManager : MonoBehaviour
         vel.space   = ParticleSystemSimulationSpace.World;
         vel.x       = new ParticleSystem.MinMaxCurve(-0.06f, 0.06f);
         vel.y       = new ParticleSystem.MinMaxCurve(0.02f, 0.08f);
+        vel.z       = new ParticleSystem.MinMaxCurve(0f, 0f);
 
         SetFade(ps);
         ps.Play();
