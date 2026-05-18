@@ -107,7 +107,7 @@ public class BackgroundManager : MonoBehaviour
             new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
             new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.2f), new GradientAlphaKey(1f, 0.8f), new GradientAlphaKey(0f, 1f) });
         fade.color = grad;
-
+        ps.Play();
         return go;
     }
 
@@ -143,6 +143,7 @@ public class BackgroundManager : MonoBehaviour
         vel.x       = new ParticleSystem.MinMaxCurve(-0.08f, 0.08f);
 
         SetFade(ps);
+        ps.Play();
         return go;
     }
 
@@ -178,6 +179,7 @@ public class BackgroundManager : MonoBehaviour
         vel.x       = new ParticleSystem.MinMaxCurve(-0.3f, 0.3f);
 
         SetFade(ps);
+        ps.Play();
         return go;
     }
 
@@ -213,6 +215,7 @@ public class BackgroundManager : MonoBehaviour
         renderer.lengthScale = 6f;
 
         SetFade(ps);
+        ps.Play();
         return go;
     }
 
@@ -248,6 +251,7 @@ public class BackgroundManager : MonoBehaviour
         vel.y       = new ParticleSystem.MinMaxCurve(0.02f, 0.08f);
 
         SetFade(ps);
+        ps.Play();
         return go;
     }
 
@@ -257,9 +261,10 @@ public class BackgroundManager : MonoBehaviour
         var go = new GameObject(name);
         go.transform.SetParent(transform);
         go.transform.localPosition = Vector3.zero;
-        go.AddComponent<ParticleSystem>();
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var r = go.GetComponent<ParticleSystemRenderer>();
-        r.sortingOrder = -10; // 슬라임 뒤
+        r.sortingOrder = -10;
         return go;
     }
 

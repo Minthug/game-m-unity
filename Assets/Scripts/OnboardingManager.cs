@@ -169,6 +169,7 @@ public class OnboardingManager : MonoBehaviour
         go.transform.SetParent(transform);
         go.transform.localPosition = Vector3.zero;
         var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         go.GetComponent<ParticleSystemRenderer>().sortingOrder = -10;
 
         var main = ps.main;
@@ -208,6 +209,7 @@ public class OnboardingManager : MonoBehaviour
             new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.15f),
                     new GradientAlphaKey(1f, 0.85f), new GradientAlphaKey(0f, 1f) });
         fade.color = grad;
+        ps.Play();
     }
 
     // ── UI 헬퍼 ─────────────────────────────────────────────────
