@@ -69,7 +69,15 @@ public static class SceneSetup
         manager.spriteContempt   = LoadSprite("Assets/Slimes/slime-contempt.png");
         manager.spriteBlank      = LoadSprite("Assets/Slimes/slime-blank.png");
 
-        // 4. 카메라 배경 어둡게
+        // 4. BackgroundManager 생성
+        var existingBg = Object.FindFirstObjectByType<BackgroundManager>();
+        var bgGO = existingBg != null
+            ? existingBg.gameObject
+            : new GameObject("BackgroundManager");
+        if (bgGO.GetComponent<BackgroundManager>() == null)
+            bgGO.AddComponent<BackgroundManager>();
+
+        // 5. 카메라 배경 어둡게
         if (Camera.main != null)
         {
             Camera.main.backgroundColor = new Color(0.086f, 0.086f, 0.094f);
