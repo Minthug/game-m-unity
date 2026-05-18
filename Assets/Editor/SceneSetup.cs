@@ -31,9 +31,8 @@ public static class SceneSetup
         if (font == null) { Debug.LogError("폰트 임포트 실패"); return; }
 
         // Dynamic 모드: 런타임에 한글 글리프를 atlas에 자동 추가
-        var fontAsset = TMP_FontAsset.CreateFontAsset(
-            font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
-            AtlasPopulationMode.Dynamic);
+        var fontAsset = TMP_FontAsset.CreateFontAsset(font);
+        fontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
 
         AssetDatabase.CreateAsset(fontAsset, assetPath);
         AssetDatabase.SaveAssets();
