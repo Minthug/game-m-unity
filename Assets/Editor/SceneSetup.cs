@@ -143,11 +143,14 @@ public static class SceneSetup
         if (bgGO.GetComponent<BackgroundManager>() == null)
             bgGO.AddComponent<BackgroundManager>();
 
-        // 5. 카메라 배경 어둡게
+        // 5. 카메라 설정
         if (Camera.main != null)
         {
-            Camera.main.backgroundColor = new Color(0.086f, 0.086f, 0.094f);
-            Camera.main.clearFlags      = CameraClearFlags.SolidColor;
+            Camera.main.transform.position = new Vector3(0f, 0f, -10f);
+            Camera.main.backgroundColor    = new Color(0.086f, 0.086f, 0.094f);
+            Camera.main.clearFlags         = CameraClearFlags.SolidColor;
+            Camera.main.orthographic       = true;
+            Camera.main.orthographicSize   = 5f;
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());

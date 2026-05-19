@@ -150,14 +150,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlimeManager
   slimePrefab: {fileID: 8224594015906434618, guid: 26cfe37b33fbc114eadcfe98f6f0ed35, type: 3}
-  spriteAngry: {fileID: 5493271731887828930, guid: b7830c63f2d2ebd45bda75e3da9db751, type: 3}
-  spriteSad: {fileID: -7996497382561096085, guid: 33009b7f0846d074a8f9a93e4e6ba1be, type: 3}
-  spriteFear: {fileID: -5804562147697932540, guid: df1a2b9e7c5e8f94b897bea9bb50684d, type: 3}
-  spriteHappy: {fileID: -8963619979377343573, guid: 565e2924153e03545b9f5fa760a86cdf, type: 3}
-  spriteDisgust: {fileID: 3893397035570426807, guid: 6ef3c82e1aa361b41b75e844186fdc00, type: 3}
-  spriteSurprised: {fileID: -1366509400339180478, guid: af13f2fa51e7fb041b82abef3455a28d, type: 3}
-  spriteContempt: {fileID: -4887381488504033577, guid: 882ea474346e253478ea8dd75d9302d1, type: 3}
-  spriteBlank: {fileID: -3719917232494006091, guid: 1386a073d4f7f8248b1e6ac1426fea28, type: 3}
+  spriteAngry: {fileID: 21300000, guid: b7830c63f2d2ebd45bda75e3da9db751, type: 3}
+  spriteSad: {fileID: 21300000, guid: 33009b7f0846d074a8f9a93e4e6ba1be, type: 3}
+  spriteFear: {fileID: 21300000, guid: df1a2b9e7c5e8f94b897bea9bb50684d, type: 3}
+  spriteHappy: {fileID: 21300000, guid: 565e2924153e03545b9f5fa760a86cdf, type: 3}
+  spriteDisgust: {fileID: 21300000, guid: 6ef3c82e1aa361b41b75e844186fdc00, type: 3}
+  spriteSurprised: {fileID: 21300000, guid: af13f2fa51e7fb041b82abef3455a28d, type: 3}
+  spriteContempt: {fileID: 21300000, guid: 882ea474346e253478ea8dd75d9302d1, type: 3}
+  spriteBlank: {fileID: 21300000, guid: 1386a073d4f7f8248b1e6ac1426fea28, type: 3}
 --- !u!4 &728157486
 Transform:
   m_ObjectHideFlags: 0
@@ -262,7 +262,7 @@ Transform:
   m_GameObject: {fileID: 793400551}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
