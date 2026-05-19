@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -31,6 +32,8 @@ public class OnboardingManager : MonoBehaviour
     Button[] choiceButtons;
     TextMeshProUGUI[] choiceTexts;
     GameObject finalPanel;
+    TMP_InputField inputField;
+    Image fadeOverlay;
 
     void Awake()
     {
@@ -82,29 +85,55 @@ public class OnboardingManager : MonoBehaviour
     {
         questionPanel.SetActive(false);
         finalPanel.SetActive(true);
+        if (inputField != null) inputField.Select();
+        // WebGL 빌드에서는 React 레이어도 트리거
         WebBridge.RequestTextInput("지금 꼭 내뱉고 싶은 말은?");
     }
 
-    // ── Web → Unity ─────────────────────────────────────────────
-    // SendMessage("OnboardingManager", "SubmitText", "{\"text\":\"...\",\"skip\":false}")
+    // ── 완료 버튼 (Unity InputField) ────────────────────────────
+    void OnSubmitButtonClicked()
+    {
+        var text = inputField != null ? inputField.text.Trim() : "";
+        SaveAndLoad(text, skip: false);
+    }
+
+    // ── Web → Unity (WebGL SendMessage) ─────────────────────────
     public void SubmitText(string json)
     {
         var d = JsonUtility.FromJson<SubmitData>(json);
-        if (!d.skip && !string.IsNullOrWhiteSpace(d.text))
-        {
-            PlayerPrefs.SetString("first_slime_text", d.text);
-            PlayerPrefs.SetString("first_slime_expression",
-                EmotionDetector.Detect(d.text).ToString().ToLower());
-        }
-        PlayerPrefs.SetInt("onboarding_done", 1);
-        PlayerPrefs.Save();
-        SceneManager.LoadScene("Main");
+        SaveAndLoad(d.skip ? "" : d.text, d.skip);
     }
 
     public void SkipOnboarding()
     {
+        SaveAndLoad("", skip: true);
+    }
+
+    void SaveAndLoad(string text, bool skip)
+    {
+        if (!skip && !string.IsNullOrWhiteSpace(text))
+        {
+            PlayerPrefs.SetString("first_slime_text", text);
+            PlayerPrefs.SetString("first_slime_expression",
+                EmotionDetector.Detect(text).ToString().ToLower());
+        }
         PlayerPrefs.SetInt("onboarding_done", 1);
         PlayerPrefs.Save();
+        StartCoroutine(FadeAndLoad());
+    }
+
+    IEnumerator FadeAndLoad()
+    {
+        if (fadeOverlay != null)
+        {
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime * 2.5f;
+                fadeOverlay.color = new Color(0f, 0f, 0f, Mathf.Clamp01(t));
+                yield return null;
+            }
+        }
         SceneManager.LoadScene("Main");
     }
 
@@ -150,16 +179,95 @@ public class OnboardingManager : MonoBehaviour
         finalPanel = MakePanel(canvasGO.transform, "FinalPanel");
         finalPanel.SetActive(false);
 
-        var waitTMP = MakeTMP(finalPanel.transform, "WaitText", 26f);
-        waitTMP.text      = "잠깐만요...\n입력창이 열립니다";
-        waitTMP.alignment = TextAlignmentOptions.Center;
-        SetAnchors(waitTMP.rectTransform, 0.1f, 0.45f, 0.9f, 0.65f);
+        var titleTMP = MakeTMP(finalPanel.transform, "FinalTitle", 28f);
+        titleTMP.text      = "지금 꼭\n내뱉고 싶은 말은?";
+        titleTMP.alignment = TextAlignmentOptions.Center;
+        SetAnchors(titleTMP.rectTransform, 0.1f, 0.68f, 0.9f, 0.88f);
+
+        inputField = BuildInputField(finalPanel.transform, 0.08f, 0.50f, 0.92f, 0.65f);
+
+        var (submitBtn, submitLbl) = MakeButton(finalPanel.transform, "SubmitButton",
+            0.1f, 0.35f, 0.9f, 0.47f);
+        submitLbl.text = "완료";
+        submitBtn.onClick.AddListener(OnSubmitButtonClicked);
 
         var (skipBtn, skipLbl) = MakeButton(finalPanel.transform, "SkipButton",
-            0.2f, 0.25f, 0.8f, 0.36f);
+            0.2f, 0.20f, 0.8f, 0.31f);
         skipLbl.text  = "건너뛸게요";
         skipLbl.color = new Color(0.7f, 0.7f, 0.7f);
         skipBtn.onClick.AddListener(SkipOnboarding);
+
+        // 페이드 오버레이 (씬 전환용, 맨 위 레이어)
+        var fadeGO = new GameObject("FadeOverlay");
+        fadeGO.transform.SetParent(canvasGO.transform, false);
+        var fadeRT = fadeGO.AddComponent<RectTransform>();
+        fadeRT.anchorMin = Vector2.zero;
+        fadeRT.anchorMax = Vector2.one;
+        fadeRT.offsetMin = fadeRT.offsetMax = Vector2.zero;
+        fadeOverlay = fadeGO.AddComponent<Image>();
+        fadeOverlay.color = new Color(0f, 0f, 0f, 0f);
+        fadeOverlay.raycastTarget = false;
+    }
+
+    TMP_InputField BuildInputField(Transform parent, float xMin, float yMin, float xMax, float yMax)
+    {
+        var go = new GameObject("InputField");
+        go.transform.SetParent(parent, false);
+        var rt = go.AddComponent<RectTransform>();
+        SetAnchors(rt, xMin, yMin, xMax, yMax);
+
+        var bg = go.AddComponent<Image>();
+        bg.color = new Color(1f, 1f, 1f, 0.10f);
+
+        var field = go.AddComponent<TMP_InputField>();
+        field.lineType = TMP_InputField.LineType.MultiLineSubmit;
+
+        var font = LoadKoreanFont();
+
+        // TextArea (clipping mask)
+        var areaGO = new GameObject("Text Area");
+        areaGO.transform.SetParent(go.transform, false);
+        var areaRT = areaGO.AddComponent<RectTransform>();
+        areaRT.anchorMin = Vector2.zero;
+        areaRT.anchorMax = Vector2.one;
+        areaRT.offsetMin = new Vector2(10f, 6f);
+        areaRT.offsetMax = new Vector2(-10f, -6f);
+        areaGO.AddComponent<RectMask2D>();
+
+        // 실제 텍스트
+        var textGO = new GameObject("Text");
+        textGO.transform.SetParent(areaGO.transform, false);
+        var textRT = textGO.AddComponent<RectTransform>();
+        textRT.anchorMin = Vector2.zero;
+        textRT.anchorMax = Vector2.one;
+        textRT.offsetMin = textRT.offsetMax = Vector2.zero;
+        var textTMP = textGO.AddComponent<TextMeshProUGUI>();
+        textTMP.fontSize  = 20f;
+        textTMP.color     = Color.white;
+        textTMP.alignment = TextAlignmentOptions.TopLeft;
+        if (font != null) textTMP.font = font;
+
+        // 플레이스홀더
+        var phGO = new GameObject("Placeholder");
+        phGO.transform.SetParent(areaGO.transform, false);
+        var phRT = phGO.AddComponent<RectTransform>();
+        phRT.anchorMin = Vector2.zero;
+        phRT.anchorMax = Vector2.one;
+        phRT.offsetMin = phRT.offsetMax = Vector2.zero;
+        var phTMP = phGO.AddComponent<TextMeshProUGUI>();
+        phTMP.fontSize  = 20f;
+        phTMP.color     = new Color(1f, 1f, 1f, 0.35f);
+        phTMP.text      = "여기에 입력하세요...";
+        phTMP.alignment = TextAlignmentOptions.TopLeft;
+        if (font != null) phTMP.font = font;
+
+        field.textViewport   = areaRT;
+        field.textComponent  = textTMP;
+        field.placeholder    = phTMP;
+        field.targetGraphic  = bg;
+        field.onSubmit.AddListener(_ => OnSubmitButtonClicked());
+
+        return field;
     }
 
     // ── 연기 파티클 ─────────────────────────────────────────────
@@ -225,10 +333,7 @@ public class OnboardingManager : MonoBehaviour
         return go;
     }
 
-    static TMP_FontAsset LoadKoreanFont()
-    {
-        return Resources.Load<TMP_FontAsset>("KoreanFont");
-    }
+    static TMP_FontAsset LoadKoreanFont() => Resources.Load<TMP_FontAsset>("KoreanFont");
 
     static TextMeshProUGUI MakeTMP(Transform parent, string name, float size)
     {

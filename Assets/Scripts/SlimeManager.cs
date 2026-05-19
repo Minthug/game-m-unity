@@ -92,9 +92,8 @@ public class SlimeManager : MonoBehaviour
 
     void SpawnSlime(string id, string text, Expression expression, Color color, float sizePx)
     {
-        if (slimePrefab == null) return;
+        if (slimePrefab == null) { Debug.LogError("[SlimeManager] slimePrefab이 null — Setup Scene을 다시 실행하세요"); return; }
 
-        // sizePx(48~95) → world scale(0.6~1.2)
         float worldSize = Mathf.Lerp(0.6f, 1.2f, Mathf.InverseLerp(48f, 95f, sizePx));
 
         Camera cam  = Camera.main;
@@ -105,12 +104,16 @@ public class SlimeManager : MonoBehaviour
         var go   = Instantiate(slimePrefab, pos, Quaternion.identity);
         var ctrl = go.GetComponent<SlimeController>();
 
-        var sr = go.GetComponent<SpriteRenderer>();
-        sr.sprite = GetSprite(expression);
+        var sr     = go.GetComponent<SpriteRenderer>();
+        var sprite = GetSprite(expression);
+        if (sprite == null) Debug.LogWarning($"[SlimeManager] {expression} 스프라이트가 null — Setup Scene을 다시 실행하세요");
+        sr.sprite = sprite;
+        sr.color  = color;
 
         ctrl.Init(id, expression, color, worldSize);
         slimes[id] = ctrl;
         go.name    = $"Slime_{id}";
+        Debug.Log($"[SlimeManager] 생성: {go.name} pos={pos} scale={worldSize} sprite={(sprite != null ? sprite.name : "NULL")}");
     }
 
     Sprite GetSprite(Expression e) => e switch

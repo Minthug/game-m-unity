@@ -99,6 +99,7 @@ public static class SceneSetup
         }
 
         // 2. Slime Prefab 생성
+        System.IO.Directory.CreateDirectory("Assets/Prefabs");
         var slimeGO = new GameObject("Slime");
         var sr      = slimeGO.AddComponent<SpriteRenderer>();
         sr.sortingLayerName = "Default";
@@ -133,7 +134,11 @@ public static class SceneSetup
         manager.spriteContempt  = LoadSprite("Assets/Slimes/slime-contempt.png");
         manager.spriteBlank     = LoadSprite("Assets/Slimes/slime-blank.png");
 
-        // 4. BackgroundManager 생성
+        // 4. TestSpawner 추가 (에디터/개발 빌드 전용)
+        if (managerGO.GetComponent<TestSpawner>() == null)
+            managerGO.AddComponent<TestSpawner>();
+
+        // 5. BackgroundManager 생성
         var existingBg = Object.FindFirstObjectByType<BackgroundManager>();
         var bgGO       = existingBg != null ? existingBg.gameObject : new GameObject("BackgroundManager");
         if (bgGO.GetComponent<BackgroundManager>() == null)
