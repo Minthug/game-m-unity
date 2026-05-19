@@ -48,11 +48,16 @@ public class SlimeController : MonoBehaviour
         SlimeId         = id;
         SlimeExpression = expression;
         sr.color        = color;
-        originalSize         = worldSize;
-        targetScale          = Vector3.one * worldSize;
+        originalSize    = worldSize;
+        targetScale     = Vector3.one * worldSize;
         transform.localScale = targetScale;
         GetComponent<CircleCollider2D>().radius = 0.42f;
+
+        Debug.Log($"[Slime] Init 완료 | id={id} pos={transform.position} scale={worldSize} color={color} sprite={(sr.sprite != null ? sr.sprite.name : "NULL")} cam={mainCam != null} camPos={mainCam?.transform.position}");
     }
+
+    void OnBecameVisible()   => Debug.Log($"[Slime] {SlimeId} 화면에 나타남");
+    void OnBecameInvisible() => Debug.LogWarning($"[Slime] {SlimeId} 화면에서 사라짐 pos={transform.position} active={gameObject.activeSelf}");
 
     void FixedUpdate()
     {
