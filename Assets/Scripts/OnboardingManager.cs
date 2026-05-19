@@ -217,7 +217,8 @@ public class OnboardingManager : MonoBehaviour
         SetAnchors(rt, xMin, yMin, xMax, yMax);
 
         var bg = go.AddComponent<Image>();
-        bg.color = new Color(1f, 1f, 1f, 0.10f);
+        bg.sprite = GetBlankSprite();
+        bg.color  = new Color(1f, 1f, 1f, 0.10f);
 
         var field = go.AddComponent<TMP_InputField>();
         field.lineType = TMP_InputField.LineType.MultiLineSubmit;
@@ -335,6 +336,9 @@ public class OnboardingManager : MonoBehaviour
 
     static TMP_FontAsset LoadKoreanFont() => Resources.Load<TMP_FontAsset>("KoreanFont");
 
+    static Sprite GetBlankSprite() =>
+        Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+
     static TextMeshProUGUI MakeTMP(Transform parent, string name, float size)
     {
         var go = new GameObject(name);
@@ -358,7 +362,8 @@ public class OnboardingManager : MonoBehaviour
         SetAnchors(rt, xMin, yMin, xMax, yMax);
 
         var img = go.AddComponent<Image>();
-        img.color = new Color(1f, 1f, 1f, 0.08f);
+        img.sprite = GetBlankSprite();
+        img.color  = new Color(1f, 1f, 1f, 0.08f);
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
