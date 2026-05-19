@@ -89,13 +89,12 @@ public static class SceneSetup
         foreach (var path in slimePaths)
         {
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (importer != null && importer.textureType != TextureImporterType.Sprite)
-            {
-                importer.textureType         = TextureImporterType.Sprite;
-                importer.spritePixelsPerUnit = 100;
-                importer.filterMode          = FilterMode.Bilinear;
-                AssetDatabase.ImportAsset(path);
-            }
+            if (importer == null) { Debug.LogWarning($"임포터 없음: {path}"); continue; }
+            importer.textureType      = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = 100;
+            importer.filterMode       = FilterMode.Bilinear;
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
         }
 
         // 2. Slime Prefab 생성
