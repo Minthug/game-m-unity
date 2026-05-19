@@ -108,7 +108,6 @@ public class SlimeManager : MonoBehaviour
         var sprite = GetSprite(expression);
         if (sprite == null) Debug.LogWarning($"[SlimeManager] {expression} 스프라이트가 null — Setup Scene을 다시 실행하세요");
         sr.sprite = sprite;
-        sr.color  = color;
 
         ctrl.Init(id, expression, color, worldSize);
         slimes[id] = ctrl;
