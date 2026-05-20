@@ -326,8 +326,21 @@ public class BackgroundManager : MonoBehaviour
         var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
                   ?? Shader.Find("Sprites/Default");
         var mat = new Material(shader);
+
+        // 텍스처 — URP(_BaseMap)와 레거시(_MainTex) 모두 설정
         mat.SetTexture("_BaseMap", tex);
+        mat.SetTexture("_MainTex", tex);
         mat.mainTexture = tex;
+
+        // URP 투명도 모드 활성화 (없으면 알파 무시)
+        mat.SetFloat("_Surface", 1f);   // 1 = Transparent
+        mat.SetFloat("_Blend",   0f);   // 0 = Alpha
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.renderQueue = 3000;
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+
         return mat;
     }
 
