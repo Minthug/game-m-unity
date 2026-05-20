@@ -97,7 +97,7 @@ public class BackgroundManager : MonoBehaviour
         m.startColor      = new ParticleSystem.MinMaxGradient(Hex("#FF2200", 0.9f), Hex("#FF8800", 0.95f));
         m.maxParticles    = 50;
         m.gravityModifier = -0.3f;
-        ps.emission.rateOverTime = 9f;
+        var e0 = ps.emission; e0.rateOverTime = 9f;
         SetShape(ps, bottom: true);
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
@@ -118,7 +118,7 @@ public class BackgroundManager : MonoBehaviour
         m.startColor      = new ParticleSystem.MinMaxGradient(Hex("#1E5FFF", 0.7f), Hex("#88BBFF", 0.85f));
         m.maxParticles    = 35;
         m.gravityModifier = 0.08f;
-        ps.emission.rateOverTime = 3.5f;
+        var e1 = ps.emission; e1.rateOverTime = 3.5f;
         SetShape(ps, bottom: false, top: true);
         SetFade(ps);
         ps.Play();
@@ -136,7 +136,7 @@ public class BackgroundManager : MonoBehaviour
         m.startColor      = new ParticleSystem.MinMaxGradient(Hex("#440088", 0.18f), Hex("#9944CC", 0.28f));
         m.maxParticles    = 20;
         m.gravityModifier = 0f;
-        ps.emission.rateOverTime = 1.5f;
+        var e2 = ps.emission; e2.rateOverTime = 1.5f;
         SetShape(ps, fullscreen: true);
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
@@ -163,7 +163,7 @@ public class BackgroundManager : MonoBehaviour
         m.startColor      = new ParticleSystem.MinMaxGradient(Hex("#FFD700", 0.9f), Hex("#FF69B4", 0.95f));
         m.maxParticles    = 60;
         m.gravityModifier = -0.1f;
-        ps.emission.rateOverTime = 10f;
+        var e3 = ps.emission; e3.rateOverTime = 10f;
         SetShape(ps, fullscreen: true);
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
@@ -185,7 +185,7 @@ public class BackgroundManager : MonoBehaviour
         m.startColor      = new ParticleSystem.MinMaxGradient(Hex("#003300", 0.20f), Hex("#00AA44", 0.30f));
         m.maxParticles    = 18;
         m.gravityModifier = 0f;
-        ps.emission.rateOverTime = 1.2f;
+        var e4 = ps.emission; e4.rateOverTime = 1.2f;
         SetShape(ps, fullscreen: true);
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
@@ -207,7 +207,7 @@ public class BackgroundManager : MonoBehaviour
         m.startColor      = new ParticleSystem.MinMaxGradient(Hex("#FFFFFF", 0.85f), Hex("#FFFF44", 0.95f));
         m.maxParticles    = 40;
         m.gravityModifier = 0.05f;
-        ps.emission.rateOverTime = 8f;
+        var e5 = ps.emission; e5.rateOverTime = 8f;
         SetShape(ps, fullscreen: true);
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
@@ -229,7 +229,7 @@ public class BackgroundManager : MonoBehaviour
         m.startColor      = new ParticleSystem.MinMaxGradient(Hex("#556677", 0.15f), Hex("#99AABB", 0.25f));
         m.maxParticles    = 15;
         m.gravityModifier = 0f;
-        ps.emission.rateOverTime = 1.2f;
+        var e6 = ps.emission; e6.rateOverTime = 1.2f;
         SetShape(ps, fullscreen: true);
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
@@ -253,7 +253,7 @@ public class BackgroundManager : MonoBehaviour
             new Color(0.5f, 0.5f, 0.55f, 0.18f));
         m.maxParticles    = 14;
         m.gravityModifier = 0f;
-        ps.emission.rateOverTime = 1.2f;
+        var e7 = ps.emission; e7.rateOverTime = 1.2f;
         SetShape(ps, fullscreen: true);
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
