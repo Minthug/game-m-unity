@@ -133,6 +133,13 @@ public class SlimeManager : MonoBehaviour
         Debug.Log("[SlimeManager] 분리할 2단계+ 슬라임 없음");
     }
 
+    public void PopFirst()
+    {
+        foreach (var s in slimes.Values)
+            { s.TriggerPop(); return; }
+        Debug.Log("[SlimeManager] 팝할 슬라임 없음");
+    }
+
     // ── 합치기 ───────────────────────────────────────────────
 
     public void TryMerge(string id1, string id2)

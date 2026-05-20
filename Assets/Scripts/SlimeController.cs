@@ -156,62 +156,78 @@ public class SlimeController : MonoBehaviour
 
     void ResetScale() => targetScale = Vector3.one * originalSize;
 
-    // ── 입력 ─────────────────────────────────────────────────
+    // ── 입력 (New Input System) ───────────────────────────────
 
-    void OnMouseDown()
+    // 이 프레임에 클릭을 선점한 슬라임 (중복 반응 방지)
+    static SlimeController pressedSlime;
+
+    CircleCollider2D col2d;
+
+    void Start() => col2d = GetComponent<CircleCollider2D>();
+
+    void Update()
     {
-        isMouseHeld   = true;
-        isDragging    = false;
-        mouseDownTime = Time.time;
-        mouseDownPos  = GetMouseWorld();
-        rb.linearVelocity = Vector2.zero;
-        dragOffset    = (Vector2)transform.position - mouseDownPos;
-        SlimeManager.Instance?.OnDragStart(SlimeId);
+        var mouse = Mouse.current;
+        if (mouse == null) return;
 
-        holdRoutine = StartCoroutine(HoldTimer());
-    }
+        Vector2 mouseWorld = GetMouseWorld();
 
-    void OnMouseDrag()
-    {
-        if (!isMouseHeld) return;
-
-        var mousePos = GetMouseWorld();
-
-        // 이동 감지 → 드래그로 전환, 홀드 타이머 취소
-        if (!isDragging && (mousePos - mouseDownPos).magnitude > 0.12f)
+        // ── 버튼 누름 ──
+        if (mouse.leftButton.wasPressedThisFrame && pressedSlime == null)
         {
-            isDragging = true;
+            // 이 슬라임의 콜라이더 위인지 확인
+            var hit = Physics2D.OverlapPoint(mouseWorld);
+            if (hit != null && hit.gameObject == gameObject)
+            {
+                pressedSlime  = this;
+                isMouseHeld   = true;
+                isDragging    = false;
+                mouseDownTime = Time.time;
+                mouseDownPos  = mouseWorld;
+                rb.linearVelocity = Vector2.zero;
+                dragOffset    = (Vector2)transform.position - mouseWorld;
+                SlimeManager.Instance?.OnDragStart(SlimeId);
+                holdRoutine = StartCoroutine(HoldTimer());
+            }
+        }
+
+        // ── 드래그 중 ──
+        if (isMouseHeld && mouse.leftButton.isPressed)
+        {
+            if (!isDragging && (mouseWorld - mouseDownPos).magnitude > 0.12f)
+            {
+                isDragging = true;
+                if (holdRoutine != null) { StopCoroutine(holdRoutine); holdRoutine = null; }
+            }
+            if (isDragging)
+                transform.position = (Vector3)(mouseWorld + dragOffset);
+        }
+
+        // ── 버튼 뗌 ──
+        if (isMouseHeld && mouse.leftButton.wasReleasedThisFrame)
+        {
             if (holdRoutine != null) { StopCoroutine(holdRoutine); holdRoutine = null; }
-        }
 
-        if (isDragging)
-            transform.position = (Vector3)(mousePos + dragOffset);
-    }
+            bool wasDragging = isDragging;
+            isMouseHeld  = false;
+            isDragging   = false;
+            pressedSlime = null;
 
-    void OnMouseUp()
-    {
-        if (holdRoutine != null) { StopCoroutine(holdRoutine); holdRoutine = null; }
+            SlimeManager.Instance?.OnDragEnd(SlimeId);
 
-        bool wasDragging = isDragging;
-        isMouseHeld = false;
-        isDragging  = false;
-
-        var releasePos = GetMouseWorld();
-        SlimeManager.Instance?.OnDragEnd(SlimeId);
-
-        if (wasDragging)
-        {
-            rb.linearVelocity = (releasePos - (Vector2)transform.position) * 2f;
-        }
-        else
-        {
-            // 탭 → 2단계 이상 분리
-            float elapsed    = Time.time - mouseDownTime;
-            float moved      = (releasePos - mouseDownPos).magnitude;
-            bool  isQuickTap = elapsed < 0.25f && moved < 0.3f;
-            Debug.Log($"[Slime] tap: elapsed={elapsed:F3}s moved={moved:F3} stage={Stage} quickTap={isQuickTap}");
-            if (isQuickTap && Stage > 1)
-                SlimeManager.Instance?.SplitSlime(SlimeId);
+            if (wasDragging)
+            {
+                rb.linearVelocity = (mouseWorld - (Vector2)transform.position) * 2f;
+            }
+            else
+            {
+                float elapsed    = Time.time - mouseDownTime;
+                float moved      = (mouseWorld - mouseDownPos).magnitude;
+                bool  isQuickTap = elapsed < 0.25f && moved < 0.3f;
+                Debug.Log($"[Slime] tap: elapsed={elapsed:F3}s moved={moved:F3} stage={Stage} quickTap={isQuickTap}");
+                if (isQuickTap && Stage > 1)
+                    SlimeManager.Instance?.SplitSlime(SlimeId);
+            }
         }
     }
 
@@ -219,13 +235,20 @@ public class SlimeController : MonoBehaviour
     {
         yield return new WaitForSeconds(0.6f);
         if (isMouseHeld && !isDragging)
-            StartCoroutine(PopAnimation());
+            TriggerPop();
+    }
+
+    public void TriggerPop()
+    {
+        if (holdRoutine != null) { StopCoroutine(holdRoutine); holdRoutine = null; }
+        isMouseHeld  = false;
+        isDragging   = false;
+        pressedSlime = null;
+        StartCoroutine(PopAnimation());
     }
 
     IEnumerator PopAnimation()
     {
-        isMouseHeld = false;
-        isDragging  = false;
         rb.linearVelocity = Vector2.zero;
         rb.simulated      = false;
 

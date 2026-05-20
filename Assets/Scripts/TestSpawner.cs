@@ -47,8 +47,12 @@ public class TestSpawner : MonoBehaviour
         if (kb.sKey.wasPressedThisFrame)
             SlimeManager.Instance?.TriggerShake("");
 
-        // D: 2단계 이상 슬라임 첫 번째를 강제 분리 (클릭 감지 우회 테스트)
+        // D: 2단계 이상 슬라임 첫 번째를 강제 분리
         if (kb.dKey.wasPressedThisFrame)
             SlimeManager.Instance?.SplitFirst();
+
+        // P: 첫 번째 슬라임 팝 (꾹 누르기 효과 테스트)
+        if (kb.pKey.wasPressedThisFrame)
+            SlimeManager.Instance?.PopFirst();
     }
 }
