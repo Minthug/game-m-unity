@@ -155,10 +155,11 @@ public class BackgroundManager : MonoBehaviour
         return go;
     }
 
-    // 행복: 알록달록 꽃가루가 살랑살랑 위로 떠오름
+    // 행복: 알록달록 별 꽃가루가 살랑살랑 위로 떠오름
     GameObject BuildHappy()
     {
         var ps = NewPS("PS_Happy", out var go);
+        go.GetComponent<ParticleSystemRenderer>().material = GetStarMat();
         var m  = ps.main;
         m.startLifetime   = new ParticleSystem.MinMaxCurve(4f, 7f);
         m.startSpeed      = new ParticleSystem.MinMaxCurve(0.3f, 1.0f);
@@ -304,19 +305,30 @@ public class BackgroundManager : MonoBehaviour
     // ── 유틸 ────────────────────────────────────────────────────
 
     Material _particleMat;
+    Material _starMat;
 
-    // 소프트 원 텍스처를 공유 머티리얼로 만들어 네모 픽셀 제거
     Material GetParticleMat()
     {
         if (_particleMat != null) return _particleMat;
+        _particleMat = MakeMat(MakeCircleTex(32));
+        return _particleMat;
+    }
 
-        var tex  = MakeCircleTex(32);
+    Material GetStarMat()
+    {
+        if (_starMat != null) return _starMat;
+        _starMat = MakeMat(MakeStarTex(32));
+        return _starMat;
+    }
+
+    Material MakeMat(Texture2D tex)
+    {
         var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
                   ?? Shader.Find("Sprites/Default");
-        _particleMat = new Material(shader);
-        _particleMat.SetTexture("_BaseMap", tex);   // URP
-        _particleMat.mainTexture = tex;              // fallback
-        return _particleMat;
+        var mat = new Material(shader);
+        mat.SetTexture("_BaseMap", tex);
+        mat.mainTexture = tex;
+        return mat;
     }
 
     static Texture2D MakeCircleTex(int size)
@@ -333,7 +345,32 @@ public class BackgroundManager : MonoBehaviour
             float dy   = y + 0.5f - half;
             float dist = Mathf.Sqrt(dx * dx + dy * dy);
             float t    = Mathf.Clamp01(1f - dist / half);
-            float a    = t * t * (3f - 2f * t); // smoothstep
+            float a    = t * t * (3f - 2f * t);
+            pixels[y * size + x] = new Color(1f, 1f, 1f, a);
+        }
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return tex;
+    }
+
+    static Texture2D MakeStarTex(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.wrapMode   = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+        float half = size * 0.5f;
+        var pixels = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++)
+        {
+            float dx = (x + 0.5f - half) / half;
+            float dy = (y + 0.5f - half) / half;
+            float r  = Mathf.Sqrt(dx * dx + dy * dy);
+            float angle = Mathf.Atan2(dy, dx);
+            // 5각 별: 각도마다 threshold 변동
+            float threshold = 0.38f + 0.28f * Mathf.Abs(Mathf.Cos(angle * 2.5f));
+            float a = Mathf.Clamp01((threshold - r) / 0.08f);
+            a = a * a * (3f - 2f * a);
             pixels[y * size + x] = new Color(1f, 1f, 1f, a);
         }
         tex.SetPixels(pixels);
