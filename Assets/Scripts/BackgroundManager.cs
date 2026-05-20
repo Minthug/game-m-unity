@@ -155,24 +155,53 @@ public class BackgroundManager : MonoBehaviour
         return go;
     }
 
-    // 행복: 황금/핑크 반짝이가 위로 떠오름
+    // 행복: 알록달록 꽃가루가 살랑살랑 위로 떠오름
     GameObject BuildHappy()
     {
         var ps = NewPS("PS_Happy", out var go);
         var m  = ps.main;
-        m.startLifetime   = new ParticleSystem.MinMaxCurve(3f, 6f);
-        m.startSpeed      = new ParticleSystem.MinMaxCurve(0.5f, 1.5f);
-        m.startSize       = new ParticleSystem.MinMaxCurve(0.02f, 0.08f);
-        m.startColor      = new ParticleSystem.MinMaxGradient(Hex("#FFD700", 0.9f), Hex("#FF69B4", 0.95f));
-        m.maxParticles    = 60;
-        m.gravityModifier = -0.1f;
-        var e3 = ps.emission; e3.rateOverTime = 10f;
+        m.startLifetime   = new ParticleSystem.MinMaxCurve(4f, 7f);
+        m.startSpeed      = new ParticleSystem.MinMaxCurve(0.3f, 1.0f);
+        m.startSize       = new ParticleSystem.MinMaxCurve(0.05f, 0.14f);
+        m.startRotation   = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+        m.maxParticles    = 80;
+        m.gravityModifier = -0.06f;
+
+        // 무지개 색상 — 파티클마다 랜덤 선택
+        var grad = new Gradient();
+        grad.mode = GradientMode.Fixed;
+        grad.SetKeys(
+            new GradientColorKey[]
+            {
+                new(new Color(1.0f, 0.25f, 0.25f), 0.00f), // 빨
+                new(new Color(1.0f, 0.60f, 0.10f), 0.14f), // 주
+                new(new Color(1.0f, 1.00f, 0.15f), 0.28f), // 노
+                new(new Color(0.2f, 0.90f, 0.30f), 0.42f), // 초
+                new(new Color(0.2f, 0.65f, 1.00f), 0.57f), // 파
+                new(new Color(0.7f, 0.25f, 1.00f), 0.71f), // 보
+                new(new Color(1.0f, 0.40f, 0.85f), 0.85f), // 핑크
+                new(new Color(1.0f, 1.00f, 1.00f), 1.00f), // 흰
+            },
+            new GradientAlphaKey[] { new(1f, 0f), new(1f, 1f) }
+        );
+        var colorRange = new ParticleSystem.MinMaxGradient(grad);
+        colorRange.mode = ParticleSystemGradientMode.RandomColor;
+        m.startColor = colorRange;
+
+        var e3 = ps.emission; e3.rateOverTime = 14f;
         SetShape(ps, fullscreen: true);
+
+        // 살랑살랑 회전 (꽃가루 느낌)
+        var rot = ps.rotationOverLifetime;
+        rot.enabled = true;
+        rot.z = new ParticleSystem.MinMaxCurve(-1.5f, 1.5f);
+
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
-        vel.x = new ParticleSystem.MinMaxCurve(-0.2f, 0.2f);
-        vel.y = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
+        vel.x = new ParticleSystem.MinMaxCurve(-0.25f, 0.25f);
+        vel.y = new ParticleSystem.MinMaxCurve(0.25f, 0.85f);
         vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+
         SetFade(ps);
         ps.Play();
         return go;
@@ -273,6 +302,45 @@ public class BackgroundManager : MonoBehaviour
     }
 
     // ── 유틸 ────────────────────────────────────────────────────
+
+    Material _particleMat;
+
+    // 소프트 원 텍스처를 공유 머티리얼로 만들어 네모 픽셀 제거
+    Material GetParticleMat()
+    {
+        if (_particleMat != null) return _particleMat;
+
+        var tex  = MakeCircleTex(32);
+        var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                  ?? Shader.Find("Sprites/Default");
+        _particleMat = new Material(shader);
+        _particleMat.SetTexture("_BaseMap", tex);   // URP
+        _particleMat.mainTexture = tex;              // fallback
+        return _particleMat;
+    }
+
+    static Texture2D MakeCircleTex(int size)
+    {
+        var tex  = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.wrapMode   = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+        float half = size * 0.5f;
+        var pixels = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++)
+        {
+            float dx   = x + 0.5f - half;
+            float dy   = y + 0.5f - half;
+            float dist = Mathf.Sqrt(dx * dx + dy * dy);
+            float t    = Mathf.Clamp01(1f - dist / half);
+            float a    = t * t * (3f - 2f * t); // smoothstep
+            pixels[y * size + x] = new Color(1f, 1f, 1f, a);
+        }
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return tex;
+    }
+
     ParticleSystem NewPS(string name, out GameObject go)
     {
         go = new GameObject(name);
@@ -286,9 +354,7 @@ public class BackgroundManager : MonoBehaviour
         main.simulationSpace = ParticleSystemSimulationSpace.World;
         var r = go.GetComponent<ParticleSystemRenderer>();
         r.sortingOrder = -10;
-        // URP 호환 머티리얼 지정 (없으면 핑크/마젠타 에러 방지)
-        var mat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-        if (mat.shader.isSupported) r.material = mat;
+        r.material = GetParticleMat();
         return ps;
     }
 
