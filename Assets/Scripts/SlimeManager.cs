@@ -219,6 +219,19 @@ public class SlimeManager : MonoBehaviour
         _           => Expression.Blank,
     };
 
+    public Expression GetDominantExpression()
+    {
+        if (slimes.Count == 0) return Expression.Blank;
+        var counts = new System.Collections.Generic.Dictionary<Expression, int>();
+        foreach (var s in slimes.Values)
+            counts[s.SlimeExpression] = counts.TryGetValue(s.SlimeExpression, out var c) ? c + 1 : 1;
+        Expression best = Expression.Blank;
+        int bestCount = 0;
+        foreach (var kv in counts)
+            if (kv.Value > bestCount) { bestCount = kv.Value; best = kv.Key; }
+        return best;
+    }
+
     public List<SlimeController> GetPeers(SlimeController me)
     {
         var result = new List<SlimeController>();
