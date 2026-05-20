@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,21 +10,25 @@ public class SlimeController : MonoBehaviour
     public int        Stage           { get; private set; }
     public Color      SlimeColor      { get; private set; }
 
-    Rigidbody2D  rb;
+    Rigidbody2D    rb;
     SpriteRenderer sr;
-    Camera mainCam;
+    Camera         mainCam;
 
+    // 입력 상태 (isMouseHeld: 버튼 누름, isDragging: 실제 이동 중)
+    bool    isMouseHeld;
     bool    isDragging;
     Vector2 dragOffset;
     float   originalSize;
     float   mouseDownTime;
     Vector2 mouseDownPos;
+    bool    mergeCooldown = true;
+    Coroutine holdRoutine;
 
     // 물리 파라미터
-    const float MAX_SPEED  = 1.8f;
-    const float DAMPING    = 0.95f;
-    const float DRIFT      = 0.03f;
-    const float COHESION   = 0.021f;
+    const float MAX_SPEED = 1.8f;
+    const float DAMPING   = 0.95f;
+    const float DRIFT     = 0.03f;
+    const float COHESION  = 0.021f;
 
     // 스케일 애니메이션
     Vector3 targetScale;
@@ -35,12 +40,11 @@ public class SlimeController : MonoBehaviour
         sr      = GetComponent<SpriteRenderer>();
         mainCam = Camera.main;
 
-        rb.gravityScale = 0f;
-        rb.linearDamping       = 0f;
-        rb.angularDamping  = 5f;
-        rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
+        rb.gravityScale   = 0f;
+        rb.linearDamping  = 0f;
+        rb.angularDamping = 5f;
+        rb.constraints    = RigidbodyConstraints2D.FreezeRotation;
 
-        // 초기 랜덤 속도
         rb.linearVelocity = new Vector2(
             (Random.value - 0.5f) * 0.4f,
             (Random.value - 0.5f) * 0.4f
@@ -59,31 +63,34 @@ public class SlimeController : MonoBehaviour
         transform.localScale = targetScale;
         GetComponent<CircleCollider2D>().radius = 0.42f;
 
+        mergeCooldown = true;
+        Invoke(nameof(EnableMerge), 1.5f);
+
         Debug.Log($"[Slime] Init 완료 | id={id} stage={Stage} pos={transform.position} scale={worldSize}");
     }
 
+    void EnableMerge() => mergeCooldown = false;
+
     void OnBecameVisible()   => Debug.Log($"[Slime] {SlimeId} 화면에 나타남");
-    void OnBecameInvisible() => Debug.LogWarning($"[Slime] {SlimeId} 화면에서 사라짐 pos={transform.position} active={gameObject.activeSelf}");
-    void OnDisable()  => Debug.LogWarning($"[Slime] {SlimeId} OnDisable — activeSelf={gameObject.activeSelf}\n{System.Environment.StackTrace}");
-    void OnDestroy()  => Debug.LogWarning($"[Slime] {SlimeId} OnDestroy\n{System.Environment.StackTrace}");
+    void OnBecameInvisible() => Debug.LogWarning($"[Slime] {SlimeId} 화면에서 사라짐");
+    void OnDisable()  => Debug.LogWarning($"[Slime] {SlimeId} OnDisable");
+    void OnDestroy()  => Debug.LogWarning($"[Slime] {SlimeId} OnDestroy");
 
     void FixedUpdate()
     {
-        if (isDragging) return;
+        if (isDragging || isMouseHeld) return;
 
         Vector2 vel = rb.linearVelocity;
 
-        // 무작위 표류
         vel += new Vector2(
             (Random.value - 0.5f) * DRIFT,
             (Random.value - 0.5f) * DRIFT
         );
 
-        // 같은 감정 군집
         var peers = SlimeManager.Instance?.GetPeers(this);
         if (peers != null && peers.Count > 0)
         {
-            Vector2 center = Vector2.zero;
+            Vector2 center  = Vector2.zero;
             float   avgDist = 0f;
             foreach (var p in peers)
             {
@@ -103,17 +110,12 @@ public class SlimeController : MonoBehaviour
             }
         }
 
-        // 속도 제한
-        if (vel.magnitude > MAX_SPEED)
-            vel = vel.normalized * MAX_SPEED;
-
+        if (vel.magnitude > MAX_SPEED) vel = vel.normalized * MAX_SPEED;
         vel *= DAMPING;
         rb.linearVelocity = vel;
 
-        // 화면 경계 반사
         ClampToBounds(ref vel);
 
-        // 스케일 스쿼시 애니메이션
         transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.fixedDeltaTime * SQUISH_SPEED);
     }
 
@@ -125,13 +127,13 @@ public class SlimeController : MonoBehaviour
         float r = transform.localScale.x * 0.5f;
 
         Vector3 pos = transform.position;
-        if (pos.x - r < -w) { pos.x = -w + r; vel.x =  Mathf.Abs(vel.x) * 0.5f; }
-        else if (pos.x + r >  w) { pos.x =  w - r; vel.x = -Mathf.Abs(vel.x) * 0.5f; }
-        if (pos.y - r < -h) { pos.y = -h + r; vel.y =  Mathf.Abs(vel.y) * 0.5f; }
-        else if (pos.y + r >  h) { pos.y =  h - r; vel.y = -Mathf.Abs(vel.y) * 0.5f; }
+        if (pos.x - r < -w)      { pos.x = -w + r; vel.x =  Mathf.Abs(vel.x) * 0.5f; }
+        else if (pos.x + r > w)  { pos.x =  w - r; vel.x = -Mathf.Abs(vel.x) * 0.5f; }
+        if (pos.y - r < -h)      { pos.y = -h + r; vel.y =  Mathf.Abs(vel.y) * 0.5f; }
+        else if (pos.y + r > h)  { pos.y =  h - r; vel.y = -Mathf.Abs(vel.y) * 0.5f; }
 
-        transform.position  = pos;
-        rb.linearVelocity        = vel;
+        transform.position    = pos;
+        rb.linearVelocity     = vel;
     }
 
     void OnCollisionEnter2D(Collision2D col)
@@ -143,54 +145,141 @@ public class SlimeController : MonoBehaviour
         );
         Invoke(nameof(ResetScale), 0.12f);
 
-        // 합치기: 같은 감정 + 같은 단계 + 3단계 미만
-        if (Stage >= 3) return;
+        if (Stage >= 3 || mergeCooldown) return;
         var other = col.gameObject.GetComponent<SlimeController>();
-        if (other == null) return;
-        if (other.Stage != Stage) return;
-        if (other.SlimeExpression != SlimeExpression) return;
+        if (other == null || other.mergeCooldown) return;
+        if (other.Stage != Stage || other.SlimeExpression != SlimeExpression) return;
 
-        // ID 비교로 한쪽만 트리거 (양쪽 OnCollision이 같은 프레임에 실행되므로)
         if (string.Compare(SlimeId, other.SlimeId, System.StringComparison.Ordinal) < 0)
             SlimeManager.Instance?.TryMerge(SlimeId, other.SlimeId);
     }
 
     void ResetScale() => targetScale = Vector3.one * originalSize;
 
-    // --- 드래그 ---
+    // ── 입력 ─────────────────────────────────────────────────
 
     void OnMouseDown()
     {
-        isDragging    = true;
+        isMouseHeld   = true;
+        isDragging    = false;
         mouseDownTime = Time.time;
         mouseDownPos  = GetMouseWorld();
         rb.linearVelocity = Vector2.zero;
-        dragOffset = (Vector2)transform.position - mouseDownPos;
+        dragOffset    = (Vector2)transform.position - mouseDownPos;
         SlimeManager.Instance?.OnDragStart(SlimeId);
-        Debug.Log($"[Slime] OnMouseDown: {SlimeId} stage={Stage}");
+
+        holdRoutine = StartCoroutine(HoldTimer());
     }
 
     void OnMouseDrag()
     {
-        if (!isDragging) return;
-        transform.position = (Vector3)(GetMouseWorld() + dragOffset);
+        if (!isMouseHeld) return;
+
+        var mousePos = GetMouseWorld();
+
+        // 이동 감지 → 드래그로 전환, 홀드 타이머 취소
+        if (!isDragging && (mousePos - mouseDownPos).magnitude > 0.12f)
+        {
+            isDragging = true;
+            if (holdRoutine != null) { StopCoroutine(holdRoutine); holdRoutine = null; }
+        }
+
+        if (isDragging)
+            transform.position = (Vector3)(mousePos + dragOffset);
     }
 
     void OnMouseUp()
     {
-        isDragging = false;
+        if (holdRoutine != null) { StopCoroutine(holdRoutine); holdRoutine = null; }
+
+        bool wasDragging = isDragging;
+        isMouseHeld = false;
+        isDragging  = false;
+
         var releasePos = GetMouseWorld();
-        rb.linearVelocity = (releasePos - (Vector2)transform.position) * 2f;
         SlimeManager.Instance?.OnDragEnd(SlimeId);
 
-        float elapsed   = Time.time - mouseDownTime;
-        float moved     = (releasePos - mouseDownPos).magnitude;
-        bool isQuickTap  = elapsed < 0.25f;
-        bool barelyMoved = moved < 0.3f;
-        Debug.Log($"[Slime] OnMouseUp: {SlimeId} elapsed={elapsed:F3}s moved={moved:F3} stage={Stage} → tap={isQuickTap} still={barelyMoved}");
+        if (wasDragging)
+        {
+            rb.linearVelocity = (releasePos - (Vector2)transform.position) * 2f;
+        }
+        else
+        {
+            // 탭 → 2단계 이상 분리
+            float elapsed    = Time.time - mouseDownTime;
+            float moved      = (releasePos - mouseDownPos).magnitude;
+            bool  isQuickTap = elapsed < 0.25f && moved < 0.3f;
+            Debug.Log($"[Slime] tap: elapsed={elapsed:F3}s moved={moved:F3} stage={Stage} quickTap={isQuickTap}");
+            if (isQuickTap && Stage > 1)
+                SlimeManager.Instance?.SplitSlime(SlimeId);
+        }
+    }
 
-        if (isQuickTap && barelyMoved && Stage > 1)
-            SlimeManager.Instance?.SplitSlime(SlimeId);
+    IEnumerator HoldTimer()
+    {
+        yield return new WaitForSeconds(0.6f);
+        if (isMouseHeld && !isDragging)
+            StartCoroutine(PopAnimation());
+    }
+
+    IEnumerator PopAnimation()
+    {
+        isMouseHeld = false;
+        isDragging  = false;
+        rb.linearVelocity = Vector2.zero;
+        rb.simulated      = false;
+
+        // 1. 흔들기
+        Vector3 origin = transform.position;
+        float[] oxList = { 0.18f, -0.18f, 0.14f, -0.14f, 0.10f, -0.10f, 0.06f, -0.06f, 0.03f, -0.03f, 0f };
+        foreach (float ox in oxList)
+        {
+            transform.position = origin + new Vector3(ox, 0f, 0f);
+            yield return new WaitForSeconds(0.028f);
+        }
+        transform.position = origin;
+
+        // 2. 스케일 wobble (4회)
+        for (int i = 0; i < 4; i++)
+        {
+            for (float t = 0f; t < 1f; t += Time.deltaTime / 0.04f)
+            {
+                transform.localScale = new Vector3(
+                    originalSize * Mathf.Lerp(1f, 1.18f, t),
+                    originalSize * Mathf.Lerp(1f, 0.82f, t), 1f);
+                yield return null;
+            }
+            for (float t = 0f; t < 1f; t += Time.deltaTime / 0.04f)
+            {
+                transform.localScale = new Vector3(
+                    originalSize * Mathf.Lerp(1.18f, 0.82f, t),
+                    originalSize * Mathf.Lerp(0.82f, 1.18f, t), 1f);
+                yield return null;
+            }
+        }
+
+        // 3. 납작하게 눌림
+        for (float t = 0f; t < 1f; t += Time.deltaTime / 0.18f)
+        {
+            transform.localScale = new Vector3(
+                originalSize * Mathf.Lerp(1f, 1.6f, t),
+                originalSize * Mathf.Lerp(1f, 0.15f, t), 1f);
+            yield return null;
+        }
+
+        // 4. 파티클 폭발
+        PopEffect.Spawn(transform.position, SlimeColor, sr.sprite, originalSize);
+
+        // 5. 줄어들며 소멸
+        Vector3 flatScale = transform.localScale;
+        for (float t = 0f; t < 1f; t += Time.deltaTime / 0.22f)
+        {
+            transform.localScale = Vector3.Lerp(flatScale, Vector3.zero, t);
+            sr.color = new Color(1f, 1f, 1f, 1f - t);
+            yield return null;
+        }
+
+        SlimeManager.Instance?.DeleteSlime(SlimeId);
     }
 
     Vector2 GetMouseWorld()

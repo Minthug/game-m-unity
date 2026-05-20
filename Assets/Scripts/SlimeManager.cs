@@ -113,11 +113,13 @@ public class SlimeManager : MonoBehaviour
 
         DeleteSlime(id);
 
-        // 두 자식을 좌우로 약간 떨어진 위치에 스폰
+        // 두 자식을 좌우로 충분히 떨어진 위치에 스폰 (겹침 → 즉시 재합치기 방지)
+        float childSize = StageToWorldSize(childStage);
+        float spawnDist = childSize * 0.42f * 2f + 0.3f; // 콜라이더 직경 + 여유
         for (int i = 0; i < 2; i++)
         {
-            float   angle  = (i == 0 ? 30f : 150f) * Mathf.Deg2Rad;
-            Vector3 offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * 0.4f;
+            float   angle  = (i == 0 ? 0f : 180f) * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * spawnDist;
             string  newId  = $"slime-split-{System.DateTime.Now.Ticks}-{i}";
             SpawnSlime(newId, "", expr, color, childStage, origin + offset);
         }
