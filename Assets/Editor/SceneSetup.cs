@@ -137,6 +137,15 @@ public static class SceneSetup
         if (managerGO.GetComponent<TestSpawner>() == null)
             managerGO.AddComponent<TestSpawner>();
 
+        // Main 씬에 잘못 포함된 OnboardingManager 제거 후 씬 저장
+        var strayOnboarding = Object.FindFirstObjectByType<OnboardingManager>();
+        if (strayOnboarding != null)
+        {
+            Object.DestroyImmediate(strayOnboarding.gameObject);
+            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+            Debug.Log("Main 씬에서 OnboardingManager 제거 및 저장 완료");
+        }
+
         // 5. BackgroundManager 생성
         var existingBg = Object.FindFirstObjectByType<BackgroundManager>();
         var bgGO       = existingBg != null ? existingBg.gameObject : new GameObject("BackgroundManager");

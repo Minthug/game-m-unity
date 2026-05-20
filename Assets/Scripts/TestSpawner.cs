@@ -18,16 +18,17 @@ public class TestSpawner : MonoBehaviour
         var kb = Keyboard.current;
         if (kb == null) return;
 
-        if (kb.spaceKey.wasPressedThisFrame)
+        // Space / 1 / 2 / 3 : 단계별 소환
+        int spawnStage = 0;
+        if (kb.spaceKey.wasPressedThisFrame || kb.digit1Key.wasPressedThisFrame) spawnStage = 1;
+        else if (kb.digit2Key.wasPressedThisFrame) spawnStage = 2;
+        else if (kb.digit3Key.wasPressedThisFrame) spawnStage = 3;
+
+        if (spawnStage > 0)
         {
             if (SlimeManager.Instance == null)
             {
                 Debug.LogError("[TestSpawner] SlimeManager.Instance가 null — Setup Scene을 다시 실행하세요");
-                return;
-            }
-            if (SlimeManager.Instance.slimePrefab == null)
-            {
-                Debug.LogError("[TestSpawner] slimePrefab이 null — Setup Scene을 다시 실행하세요");
                 return;
             }
             int i = Random.Range(0, expressions.Length);
@@ -37,13 +38,17 @@ public class TestSpawner : MonoBehaviour
                 text       = "테스트",
                 expression = expressions[i],
                 color      = colors[i],
-                size       = Random.Range(48f, 95f),
+                stage      = spawnStage,
             };
             SlimeManager.Instance.CreateSlimeFromWeb(JsonUtility.ToJson(req));
-            Debug.Log($"[TestSpawner] 슬라임 소환: {expressions[i]}");
+            Debug.Log($"[TestSpawner] {spawnStage}단계 슬라임 소환: {expressions[i]}");
         }
 
         if (kb.sKey.wasPressedThisFrame)
             SlimeManager.Instance?.TriggerShake("");
+
+        // D: 2단계 이상 슬라임 첫 번째를 강제 분리 (클릭 감지 우회 테스트)
+        if (kb.dKey.wasPressedThisFrame)
+            SlimeManager.Instance?.SplitFirst();
     }
 }

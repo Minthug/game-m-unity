@@ -37,6 +37,8 @@ public class SlimeManager : MonoBehaviour
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += (s, m) =>
+            Debug.LogWarning($"[SlimeManager] 씬 로드 감지: {s.name} / 현재 슬라임 수={slimes.Count}");
     }
 
     void Start()
@@ -49,12 +51,20 @@ public class SlimeManager : MonoBehaviour
             id         = "slime-first",
             text       = text,
             expression = PlayerPrefs.GetString("first_slime_expression", "blank"),
-            size       = 72f,
+            stage      = 1,
         };
         CreateSlimeFromWeb(JsonUtility.ToJson(req));
         PlayerPrefs.DeleteKey("first_slime_text");
         PlayerPrefs.DeleteKey("first_slime_expression");
     }
+
+    // 단계별 월드 크기
+    static float StageToWorldSize(int stage) => stage switch
+    {
+        2 => 0.9f,
+        3 => 1.2f,
+        _ => 0.6f,  // 1단계
+    };
 
     // ── React → Unity 진입점 ──────────────────────────────────
 
@@ -68,8 +78,9 @@ public class SlimeManager : MonoBehaviour
         var color      = string.IsNullOrEmpty(req.color)
             ? ColorUtil.FromHex(Palette[expression][Random.Range(0, 4)])
             : ColorUtil.FromHex(req.color);
+        int stage = (req.stage >= 1 && req.stage <= 3) ? req.stage : 1;
 
-        SpawnSlime(req.id ?? $"slime-{System.DateTime.Now.Ticks}", req.text, expression, color, req.size);
+        SpawnSlime(req.id ?? $"slime-{System.DateTime.Now.Ticks}", req.text, expression, color, stage);
     }
 
     // SendMessage("SlimeManager", "TriggerShake", "")
@@ -88,18 +99,78 @@ public class SlimeManager : MonoBehaviour
         }
     }
 
+    // ── 분리 ─────────────────────────────────────────────────
+
+    public void SplitSlime(string id)
+    {
+        if (!slimes.TryGetValue(id, out var s)) return;
+        if (s.Stage <= 1) return;
+
+        int     childStage = s.Stage - 1;
+        Vector3 origin     = s.transform.position;
+        var     expr       = s.SlimeExpression;
+        var     color      = s.SlimeColor;
+
+        DeleteSlime(id);
+
+        // 두 자식을 좌우로 약간 떨어진 위치에 스폰
+        for (int i = 0; i < 2; i++)
+        {
+            float   angle  = (i == 0 ? 30f : 150f) * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * 0.4f;
+            string  newId  = $"slime-split-{System.DateTime.Now.Ticks}-{i}";
+            SpawnSlime(newId, "", expr, color, childStage, origin + offset);
+        }
+        Debug.Log($"[SlimeManager] 분리: {id} → 2 × {childStage}단계");
+    }
+
+    public void SplitFirst()
+    {
+        foreach (var s in slimes.Values)
+            if (s.Stage > 1) { SplitSlime(s.SlimeId); return; }
+        Debug.Log("[SlimeManager] 분리할 2단계+ 슬라임 없음");
+    }
+
+    // ── 합치기 ───────────────────────────────────────────────
+
+    public void TryMerge(string id1, string id2)
+    {
+        if (!slimes.TryGetValue(id1, out var s1)) return;
+        if (!slimes.TryGetValue(id2, out var s2)) return;
+
+        int     nextStage = s1.Stage + 1;
+        Vector3 midPos    = (s1.transform.position + s2.transform.position) * 0.5f;
+        var     expr      = s1.SlimeExpression;
+        var     color     = s1.SlimeColor;
+
+        DeleteSlime(id1);
+        DeleteSlime(id2);
+
+        string newId = $"slime-merged-{System.DateTime.Now.Ticks}";
+        SpawnSlime(newId, "", expr, color, nextStage, midPos);
+        Debug.Log($"[SlimeManager] 합치기 완료 → {newId} stage={nextStage}");
+    }
+
     // ── 내부 ─────────────────────────────────────────────────
 
-    void SpawnSlime(string id, string text, Expression expression, Color color, float sizePx)
+    void SpawnSlime(string id, string text, Expression expression, Color color, int stage, Vector3? overridePos = null)
     {
         if (slimePrefab == null) { Debug.LogError("[SlimeManager] slimePrefab이 null — Setup Scene을 다시 실행하세요"); return; }
 
-        float worldSize = Mathf.Lerp(0.6f, 1.2f, Mathf.InverseLerp(48f, 95f, sizePx));
+        float worldSize = StageToWorldSize(stage);
 
-        Camera cam  = Camera.main;
-        float  hw   = cam.orthographicSize * cam.aspect;
-        float  hh   = cam.orthographicSize;
-        Vector3 pos = new(Random.Range(-hw * 0.7f, hw * 0.7f), Random.Range(-hh * 0.7f, hh * 0.7f), 0f);
+        Vector3 pos;
+        if (overridePos.HasValue)
+        {
+            pos = overridePos.Value;
+        }
+        else
+        {
+            Camera cam = Camera.main;
+            float  hw  = cam.orthographicSize * cam.aspect;
+            float  hh  = cam.orthographicSize;
+            pos = new Vector3(Random.Range(-hw * 0.7f, hw * 0.7f), Random.Range(-hh * 0.7f, hh * 0.7f), 0f);
+        }
 
         var go   = Instantiate(slimePrefab, pos, Quaternion.identity);
         var ctrl = go.GetComponent<SlimeController>();
@@ -109,10 +180,10 @@ public class SlimeManager : MonoBehaviour
         if (sprite == null) Debug.LogWarning($"[SlimeManager] {expression} 스프라이트가 null — Setup Scene을 다시 실행하세요");
         sr.sprite = sprite;
 
-        ctrl.Init(id, expression, color, worldSize);
+        ctrl.Init(id, expression, color, worldSize, stage);
         slimes[id] = ctrl;
         go.name    = $"Slime_{id}";
-        Debug.Log($"[SlimeManager] 생성: {go.name} pos={pos} scale={worldSize} sprite={(sprite != null ? sprite.name : "NULL")}");
+        Debug.Log($"[SlimeManager] 생성: {go.name} stage={stage} pos={pos} scale={worldSize}");
     }
 
     Sprite GetSprite(Expression e) => e switch

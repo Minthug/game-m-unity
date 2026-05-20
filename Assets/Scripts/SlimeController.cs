@@ -4,8 +4,10 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D), typeof(SpriteRenderer))]
 public class SlimeController : MonoBehaviour
 {
-    public string SlimeId { get; private set; }
+    public string     SlimeId         { get; private set; }
     public Expression SlimeExpression { get; private set; }
+    public int        Stage           { get; private set; }
+    public Color      SlimeColor      { get; private set; }
 
     Rigidbody2D  rb;
     SpriteRenderer sr;
@@ -14,6 +16,8 @@ public class SlimeController : MonoBehaviour
     bool    isDragging;
     Vector2 dragOffset;
     float   originalSize;
+    float   mouseDownTime;
+    Vector2 mouseDownPos;
 
     // 물리 파라미터
     const float MAX_SPEED  = 1.8f;
@@ -43,21 +47,25 @@ public class SlimeController : MonoBehaviour
         );
     }
 
-    public void Init(string id, Expression expression, Color color, float worldSize)
+    public void Init(string id, Expression expression, Color color, float worldSize, int stage = 1)
     {
         SlimeId         = id;
         SlimeExpression = expression;
-        sr.color        = color;
+        SlimeColor      = color;
+        Stage           = Mathf.Clamp(stage, 1, 3);
+        sr.color        = Color.white;
         originalSize    = worldSize;
         targetScale     = Vector3.one * worldSize;
         transform.localScale = targetScale;
         GetComponent<CircleCollider2D>().radius = 0.42f;
 
-        Debug.Log($"[Slime] Init 완료 | id={id} pos={transform.position} scale={worldSize} color={color} sprite={(sr.sprite != null ? sr.sprite.name : "NULL")} cam={mainCam != null} camPos={mainCam?.transform.position}");
+        Debug.Log($"[Slime] Init 완료 | id={id} stage={Stage} pos={transform.position} scale={worldSize}");
     }
 
     void OnBecameVisible()   => Debug.Log($"[Slime] {SlimeId} 화면에 나타남");
     void OnBecameInvisible() => Debug.LogWarning($"[Slime] {SlimeId} 화면에서 사라짐 pos={transform.position} active={gameObject.activeSelf}");
+    void OnDisable()  => Debug.LogWarning($"[Slime] {SlimeId} OnDisable — activeSelf={gameObject.activeSelf}\n{System.Environment.StackTrace}");
+    void OnDestroy()  => Debug.LogWarning($"[Slime] {SlimeId} OnDestroy\n{System.Environment.StackTrace}");
 
     void FixedUpdate()
     {
@@ -128,13 +136,23 @@ public class SlimeController : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D col)
     {
-        // 충돌 시 스쿼시 효과
         targetScale = new Vector3(
             transform.localScale.x * 1.15f,
             transform.localScale.y * 0.88f,
             1f
         );
         Invoke(nameof(ResetScale), 0.12f);
+
+        // 합치기: 같은 감정 + 같은 단계 + 3단계 미만
+        if (Stage >= 3) return;
+        var other = col.gameObject.GetComponent<SlimeController>();
+        if (other == null) return;
+        if (other.Stage != Stage) return;
+        if (other.SlimeExpression != SlimeExpression) return;
+
+        // ID 비교로 한쪽만 트리거 (양쪽 OnCollision이 같은 프레임에 실행되므로)
+        if (string.Compare(SlimeId, other.SlimeId, System.StringComparison.Ordinal) < 0)
+            SlimeManager.Instance?.TryMerge(SlimeId, other.SlimeId);
     }
 
     void ResetScale() => targetScale = Vector3.one * originalSize;
@@ -143,10 +161,13 @@ public class SlimeController : MonoBehaviour
 
     void OnMouseDown()
     {
-        isDragging = true;
-        rb.linearVelocity  = Vector2.zero;
-        dragOffset = (Vector2)transform.position - GetMouseWorld();
+        isDragging    = true;
+        mouseDownTime = Time.time;
+        mouseDownPos  = GetMouseWorld();
+        rb.linearVelocity = Vector2.zero;
+        dragOffset = (Vector2)transform.position - mouseDownPos;
         SlimeManager.Instance?.OnDragStart(SlimeId);
+        Debug.Log($"[Slime] OnMouseDown: {SlimeId} stage={Stage}");
     }
 
     void OnMouseDrag()
@@ -158,8 +179,18 @@ public class SlimeController : MonoBehaviour
     void OnMouseUp()
     {
         isDragging = false;
-        rb.linearVelocity  = (GetMouseWorld() - (Vector2)transform.position) * 2f;
+        var releasePos = GetMouseWorld();
+        rb.linearVelocity = (releasePos - (Vector2)transform.position) * 2f;
         SlimeManager.Instance?.OnDragEnd(SlimeId);
+
+        float elapsed   = Time.time - mouseDownTime;
+        float moved     = (releasePos - mouseDownPos).magnitude;
+        bool isQuickTap  = elapsed < 0.25f;
+        bool barelyMoved = moved < 0.3f;
+        Debug.Log($"[Slime] OnMouseUp: {SlimeId} elapsed={elapsed:F3}s moved={moved:F3} stage={Stage} → tap={isQuickTap} still={barelyMoved}");
+
+        if (isQuickTap && barelyMoved && Stage > 1)
+            SlimeManager.Instance?.SplitSlime(SlimeId);
     }
 
     Vector2 GetMouseWorld()

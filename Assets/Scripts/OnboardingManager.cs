@@ -37,13 +37,25 @@ public class OnboardingManager : MonoBehaviour
 
     void Awake()
     {
+        // Main 씬에 잘못 포함된 경우 즉시 자기 파괴 (Start도 무력화)
+        if (SceneManager.GetActiveScene().name == "Main")
+        {
+            shouldSkip = true;
+            Destroy(gameObject);
+            return;
+        }
         shouldSkip = PlayerPrefs.GetInt("onboarding_done", 0) == 1;
         if (!shouldSkip) mainCam = Camera.main;
     }
 
     void Start()
     {
-        if (shouldSkip) { SceneManager.LoadScene("Main"); return; }
+        if (shouldSkip)
+        {
+            if (SceneManager.GetActiveScene().name != "Main")
+                SceneManager.LoadScene("Main");
+            return;
+        }
 
         targetBg = HexColor("#0A0A0F");
         mainCam.backgroundColor = targetBg;
