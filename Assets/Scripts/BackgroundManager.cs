@@ -102,6 +102,8 @@ public class BackgroundManager : MonoBehaviour
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(-0.4f, 0.4f);
+        vel.y = new ParticleSystem.MinMaxCurve(0f, 0f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
         SetFade(ps);
         ps.Play();
         return go;
@@ -142,6 +144,7 @@ public class BackgroundManager : MonoBehaviour
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(-0.12f, 0.12f);
         vel.y = new ParticleSystem.MinMaxCurve(-0.06f, 0.10f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
         var noise = ps.noise;
         noise.enabled     = true;
         noise.strength    = 0.4f;
@@ -169,6 +172,7 @@ public class BackgroundManager : MonoBehaviour
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(-0.2f, 0.2f);
         vel.y = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
         SetFade(ps);
         ps.Play();
         return go;
@@ -191,6 +195,7 @@ public class BackgroundManager : MonoBehaviour
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(-0.05f, 0.08f);
         vel.y = new ParticleSystem.MinMaxCurve(-0.03f, 0.05f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
         SetFade(ps);
         ps.Play();
         return go;
@@ -213,6 +218,7 @@ public class BackgroundManager : MonoBehaviour
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(-1.5f, 1.5f);
         vel.y = new ParticleSystem.MinMaxCurve(-1.5f, 1.5f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
         SetFade(ps);
         ps.Play();
         return go;
@@ -235,6 +241,7 @@ public class BackgroundManager : MonoBehaviour
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(0.06f, 0.18f);
         vel.y = new ParticleSystem.MinMaxCurve(-0.02f, 0.02f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
         SetFade(ps);
         ps.Play();
         return go;
@@ -259,6 +266,7 @@ public class BackgroundManager : MonoBehaviour
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(-0.04f, 0.04f);
         vel.y = new ParticleSystem.MinMaxCurve(0.04f, 0.12f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
         SetFade(ps);
         ps.Play();
         return go;
