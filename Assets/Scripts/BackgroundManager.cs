@@ -286,6 +286,9 @@ public class BackgroundManager : MonoBehaviour
         main.simulationSpace = ParticleSystemSimulationSpace.World;
         var r = go.GetComponent<ParticleSystemRenderer>();
         r.sortingOrder = -10;
+        // URP 호환 머티리얼 지정 (없으면 핑크/마젠타 에러 방지)
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+        if (mat.shader.isSupported) r.material = mat;
         return ps;
     }
 
