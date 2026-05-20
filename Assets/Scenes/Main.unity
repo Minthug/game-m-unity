@@ -157,7 +157,7 @@ MonoBehaviour:
   spriteDisgust: {fileID: 21300000, guid: 6ef3c82e1aa361b41b75e844186fdc00, type: 3}
   spriteSurprised: {fileID: 21300000, guid: af13f2fa51e7fb041b82abef3455a28d, type: 3}
   spriteContempt: {fileID: 21300000, guid: 882ea474346e253478ea8dd75d9302d1, type: 3}
-  spriteBlank: {fileID: -984322939, guid: 00376378d3d41054988803b8b4ad9b77, type: 3}
+  spriteBlank: {fileID: 21300000, guid: 1386a073d4f7f8248b1e6ac1426fea28, type: 3}
 --- !u!4 &728157486
 Transform:
   m_ObjectHideFlags: 0
