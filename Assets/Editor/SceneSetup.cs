@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using TMPro;
@@ -164,6 +165,10 @@ public static class SceneSetup
         var envMgr      = envGO.GetComponent<EnvironmentManager>() ?? envGO.AddComponent<EnvironmentManager>();
         SetupMistItem(envMgr);
 
+        // 7. HeartRoom 폴더 + RoomManager + UI 생성
+        SetupHeartRoom();
+        SetupRoomUI();
+
         // 7. 카메라 설정
         if (Camera.main != null)
         {
@@ -240,6 +245,238 @@ public static class SceneSetup
 
     static Sprite LoadSprite(string path) =>
         AssetDatabase.LoadAssetAtPath<Sprite>(path);
+
+    static void SetupHeartRoom()
+    {
+        // 폴더 생성
+        System.IO.Directory.CreateDirectory("Assets/HeartRoom/Items");
+        System.IO.Directory.CreateDirectory("Assets/HeartRoom/Themes");
+        System.IO.Directory.CreateDirectory("Assets/HeartRoom/Sprites");
+        System.IO.Directory.CreateDirectory("Assets/HeartRoom/Prefabs");
+        AssetDatabase.Refresh();
+
+        // RoomItemObject 프리팹 생성
+        const string prefabPath = "Assets/HeartRoom/Prefabs/RoomItemObject.prefab";
+        if (!System.IO.File.Exists(prefabPath))
+        {
+            var go  = new GameObject("RoomItemObject");
+            go.AddComponent<SpriteRenderer>();
+            var col  = go.AddComponent<BoxCollider2D>();
+            col.size = Vector2.one;
+            go.AddComponent<RoomItemObject>();
+            PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
+            Object.DestroyImmediate(go);
+            Debug.Log("[Game-M] RoomItemObject 프리팹 생성 완료");
+        }
+
+        // RoomManager 씬에 추가
+        var existing = Object.FindFirstObjectByType<RoomManager>();
+        var roomGO   = existing != null ? existing.gameObject : new GameObject("RoomManager");
+        var roomMgr  = roomGO.GetComponent<RoomManager>() ?? roomGO.AddComponent<RoomManager>();
+        if (roomMgr.roomItemPrefab == null)
+            roomMgr.roomItemPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+
+        EditorUtility.SetDirty(roomMgr);
+        Debug.Log("[Game-M] HeartRoom 세팅 완료 — Assets/HeartRoom/ 폴더 생성됨");
+    }
+
+    static void SetupRoomUI()
+    {
+        // Canvas 찾기 or 생성
+        var uiMgrExisting = Object.FindFirstObjectByType<RoomUIManager>();
+        if (uiMgrExisting != null) { Debug.Log("[Game-M] RoomUI 이미 존재 — 스킵"); return; }
+
+        // Canvas
+        var canvasGO = new GameObject("RoomCanvas");
+        var canvas   = canvasGO.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 10;
+
+        var scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080, 1920);
+        scaler.matchWidthOrHeight  = 0.5f;
+
+        canvasGO.AddComponent<GraphicRaycaster>();
+
+        // EventSystem (없으면 생성)
+        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+        {
+            var esGO = new GameObject("EventSystem");
+            esGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            esGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+        }
+
+        // ── 상점 열기 버튼 (우하단) ──────────────────────────────
+        var openBtnGO  = MakeButton(canvasGO.transform, "OpenShopBtn", "🛋️ 방 꾸미기");
+        var openRect   = openBtnGO.GetComponent<RectTransform>();
+        openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 0f);
+        openRect.pivot     = new Vector2(1f, 0f);
+        openRect.anchoredPosition = new Vector2(-24f, 24f);
+        openRect.sizeDelta        = new Vector2(160f, 52f);
+
+        // ── 상점 패널 (하단에서 슬라이드) ───────────────────────
+        var panelGO  = new GameObject("ShopPanel");
+        panelGO.transform.SetParent(canvasGO.transform, false);
+        var panelImg  = panelGO.AddComponent<Image>();
+        panelImg.color = new Color(0.08f, 0.08f, 0.10f, 0.96f);
+        var panelRect = panelGO.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0f, 0f);
+        panelRect.anchorMax = new Vector2(1f, 0f);
+        panelRect.pivot     = new Vector2(0.5f, 0f);
+        panelRect.sizeDelta        = new Vector2(0f, 420f);
+        panelRect.anchoredPosition = new Vector2(0f, 0f);
+
+        // 닫기 버튼
+        var closeBtnGO = MakeButton(panelGO.transform, "CloseBtn", "✕ 닫기");
+        var closeRect  = closeBtnGO.GetComponent<RectTransform>();
+        closeRect.anchorMin = closeRect.anchorMax = new Vector2(1f, 1f);
+        closeRect.pivot     = new Vector2(1f, 1f);
+        closeRect.anchoredPosition = new Vector2(-16f, -12f);
+        closeRect.sizeDelta        = new Vector2(100f, 40f);
+
+        // 스크롤뷰
+        var scrollGO   = new GameObject("ScrollView");
+        scrollGO.transform.SetParent(panelGO.transform, false);
+        var scrollRect2 = scrollGO.AddComponent<ScrollRect>();
+        var scrollRt   = scrollGO.GetComponent<RectTransform>();
+        scrollRt.anchorMin        = new Vector2(0f, 0f);
+        scrollRt.anchorMax        = new Vector2(1f, 1f);
+        scrollRt.offsetMin        = new Vector2(16f, 16f);
+        scrollRt.offsetMax        = new Vector2(-16f, -60f);
+
+        // Viewport
+        var vpGO  = new GameObject("Viewport");
+        vpGO.transform.SetParent(scrollGO.transform, false);
+        vpGO.AddComponent<Image>().color = Color.clear;
+        vpGO.AddComponent<Mask>().showMaskGraphic = false;
+        var vpRt  = vpGO.GetComponent<RectTransform>();
+        vpRt.anchorMin = Vector2.zero; vpRt.anchorMax = Vector2.one;
+        vpRt.offsetMin = vpRt.offsetMax = Vector2.zero;
+
+        // Content (아이템 Grid)
+        var contentGO  = new GameObject("Content");
+        contentGO.transform.SetParent(vpGO.transform, false);
+        var contentRt  = contentGO.AddComponent<RectTransform>();
+        contentRt.anchorMin        = new Vector2(0f, 1f);
+        contentRt.anchorMax        = new Vector2(1f, 1f);
+        contentRt.pivot            = new Vector2(0.5f, 1f);
+        contentRt.sizeDelta        = new Vector2(0f, 300f);
+
+        var grid = contentGO.AddComponent<GridLayoutGroup>();
+        grid.cellSize    = new Vector2(160f, 180f);
+        grid.spacing     = new Vector2(12f, 12f);
+        grid.padding     = new RectOffset(12, 12, 12, 12);
+        grid.constraint  = GridLayoutGroup.Constraint.Flexible;
+
+        contentGO.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        scrollRect2.content    = contentRt;
+        scrollRect2.viewport   = vpRt;
+        scrollRect2.horizontal = false;
+
+        // ── 아이템 버튼 프리팹 ────────────────────────────────────
+        const string itemBtnPath = "Assets/HeartRoom/Prefabs/ItemButton.prefab";
+        if (!System.IO.File.Exists(itemBtnPath))
+        {
+            var ibGO   = new GameObject("ItemButton");
+            var ibImg  = ibGO.AddComponent<Image>();
+            ibImg.color = new Color(0.15f, 0.15f, 0.18f, 1f);
+            ibGO.AddComponent<Button>();
+            var ibRt   = ibGO.GetComponent<RectTransform>();
+            ibRt.sizeDelta = new Vector2(160f, 180f);
+
+            // 아이콘
+            var iconGO  = new GameObject("Icon");
+            iconGO.transform.SetParent(ibGO.transform, false);
+            var iconImg = iconGO.AddComponent<Image>();
+            iconImg.color = Color.white;
+            var iconRt  = iconGO.GetComponent<RectTransform>();
+            iconRt.anchorMin = new Vector2(0.1f, 0.35f);
+            iconRt.anchorMax = new Vector2(0.9f, 0.95f);
+            iconRt.offsetMin = iconRt.offsetMax = Vector2.zero;
+
+            // 이름
+            var labelGO = MakeTMP(ibGO.transform, "Label", "아이템", 13f);
+            var labelRt = labelGO.GetComponent<RectTransform>();
+            labelRt.anchorMin = new Vector2(0f, 0.18f);
+            labelRt.anchorMax = new Vector2(1f, 0.38f);
+            labelRt.offsetMin = labelRt.offsetMax = Vector2.zero;
+
+            // 가격
+            var priceGO = MakeTMP(ibGO.transform, "Price", "무료", 11f);
+            var priceRt = priceGO.GetComponent<RectTransform>();
+            priceRt.anchorMin = new Vector2(0f, 0f);
+            priceRt.anchorMax = new Vector2(1f, 0.2f);
+            priceRt.offsetMin = priceRt.offsetMax = Vector2.zero;
+            priceGO.GetComponent<TextMeshProUGUI>().color = new Color(0.6f, 0.6f, 0.7f);
+
+            // 잠금 오버레이
+            var lockGO  = new GameObject("Lock");
+            lockGO.transform.SetParent(ibGO.transform, false);
+            var lockImg = lockGO.AddComponent<Image>();
+            lockImg.color = new Color(0f, 0f, 0f, 0.6f);
+            var lockRt  = lockGO.GetComponent<RectTransform>();
+            lockRt.anchorMin = Vector2.zero; lockRt.anchorMax = Vector2.one;
+            lockRt.offsetMin = lockRt.offsetMax = Vector2.zero;
+            var lockLabel = MakeTMP(lockGO.transform, "LockIcon", "🔒", 22f);
+            var llRt = lockLabel.GetComponent<RectTransform>();
+            llRt.anchorMin = Vector2.zero; llRt.anchorMax = Vector2.one;
+            llRt.offsetMin = llRt.offsetMax = Vector2.zero;
+
+            PrefabUtility.SaveAsPrefabAsset(ibGO, itemBtnPath);
+            Object.DestroyImmediate(ibGO);
+        }
+
+        // ── RoomUIManager 연결 ────────────────────────────────────
+        var uiMgrGO = new GameObject("RoomUIManager");
+        uiMgrGO.transform.SetParent(canvasGO.transform, false);
+        var uiMgr = uiMgrGO.AddComponent<RoomUIManager>();
+
+        uiMgr.rootCanvas      = canvas;
+        uiMgr.shopPanel       = panelGO;
+        uiMgr.itemGrid        = contentGO.transform;
+        uiMgr.itemButtonPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(itemBtnPath);
+
+        var openBtn  = openBtnGO.GetComponent<Button>();
+        var closeBtn = closeBtnGO.GetComponent<Button>();
+        uiMgr.openShopBtn  = openBtn;
+        uiMgr.closeShopBtn = closeBtn;
+
+        openBtn.onClick.AddListener(uiMgr.OpenShop);
+        closeBtn.onClick.AddListener(uiMgr.CloseShop);
+
+        EditorUtility.SetDirty(uiMgrGO);
+        Debug.Log("[Game-M] RoomUI 생성 완료");
+    }
+
+    static GameObject MakeButton(Transform parent, string name, string label)
+    {
+        var go   = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var img  = go.AddComponent<Image>();
+        img.color = new Color(0.45f, 0.22f, 0.93f, 1f); // 보라
+        go.AddComponent<Button>();
+
+        var tmp = MakeTMP(go.transform, "Text", label, 14f);
+        var rt  = tmp.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+
+        return go;
+    }
+
+    static GameObject MakeTMP(Transform parent, string name, string text, float size)
+    {
+        var go  = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var tmp = go.AddComponent<TextMeshProUGUI>();
+        tmp.text      = text;
+        tmp.fontSize  = size;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color     = Color.white;
+        return go;
+    }
 
     static void SetupMistItem(EnvironmentManager envMgr)
     {
