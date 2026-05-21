@@ -256,9 +256,9 @@ public static class SceneSetup
 
     static void SetupHeartRoom()
     {
-        // 폴더 생성
-        System.IO.Directory.CreateDirectory("Assets/HeartRoom/Items");
-        System.IO.Directory.CreateDirectory("Assets/HeartRoom/Themes");
+        // 폴더 생성 (Resources 아래에 두면 자동 로드)
+        System.IO.Directory.CreateDirectory("Assets/Resources/HeartRoom/Items");
+        System.IO.Directory.CreateDirectory("Assets/Resources/HeartRoom/Themes");
         System.IO.Directory.CreateDirectory("Assets/HeartRoom/Sprites");
         System.IO.Directory.CreateDirectory("Assets/HeartRoom/Prefabs");
         AssetDatabase.Refresh();

@@ -5,14 +5,16 @@ public class RoomManager : MonoBehaviour
 {
     public static RoomManager Instance { get; private set; }
 
-    [Header("카탈로그")]
+    [Header("수동 카탈로그 (비워도 됨 — Resources에서 자동 로드)")]
     public List<RoomItem>  itemCatalog  = new();
     public List<RoomTheme> themeCatalog = new();
 
     [Header("프리팹")]
     public GameObject roomItemPrefab;
 
-    const string SAVE_KEY = "room_save";
+    const string SAVE_KEY        = "room_save";
+    const string ITEMS_RES_PATH  = "HeartRoom/Items";
+    const string THEMES_RES_PATH = "HeartRoom/Themes";
 
     readonly Dictionary<string, RoomItemObject> placed = new();
 
@@ -22,7 +24,23 @@ public class RoomManager : MonoBehaviour
         Instance = this;
     }
 
-    void Start() => LoadRoom();
+    void Start()
+    {
+        AutoLoadCatalog();
+        LoadRoom();
+    }
+
+    // Resources/HeartRoom/Items 에 있는 에셋 자동 탐색
+    void AutoLoadCatalog()
+    {
+        foreach (var item in Resources.LoadAll<RoomItem>(ITEMS_RES_PATH))
+            if (!itemCatalog.Contains(item)) itemCatalog.Add(item);
+
+        foreach (var theme in Resources.LoadAll<RoomTheme>(THEMES_RES_PATH))
+            if (!themeCatalog.Contains(theme)) themeCatalog.Add(theme);
+
+        Debug.Log($"[RoomMgr] 카탈로그 자동 로드: 아이템 {itemCatalog.Count}개, 테마 {themeCatalog.Count}개");
+    }
 
     // ── 배치 ─────────────────────────────────────────────────────
 
