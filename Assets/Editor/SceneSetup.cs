@@ -195,6 +195,43 @@ public static class SceneSetup
         Debug.Log("씬 세팅 완료! SlimeManager와 Slime Prefab이 준비됐어요.");
     }
 
+    // ── Room 카탈로그 갱신 ───────────────────────────────────────
+    [MenuItem("Game-M/Refresh Room Catalog")]
+    static void RefreshRoomCatalog()
+    {
+        if (EditorApplication.isPlaying) { Debug.LogError("[Game-M] 플레이 중에는 실행 불가"); return; }
+
+        var roomMgr = Object.FindFirstObjectByType<RoomManager>();
+        if (roomMgr == null) { Debug.LogError("[Game-M] RoomManager가 씬에 없음 — Setup Scene 먼저 실행"); return; }
+
+        roomMgr.itemCatalog.Clear();
+        roomMgr.themeCatalog.Clear();
+
+        if (System.IO.Directory.Exists("Assets/HeartRoom/Items"))
+        {
+            foreach (var guid in AssetDatabase.FindAssets("t:RoomItem", new[] { "Assets/HeartRoom/Items" }))
+            {
+                var item = AssetDatabase.LoadAssetAtPath<RoomItem>(AssetDatabase.GUIDToAssetPath(guid));
+                if (item != null) roomMgr.itemCatalog.Add(item);
+            }
+        }
+
+        if (System.IO.Directory.Exists("Assets/HeartRoom/Themes"))
+        {
+            foreach (var guid in AssetDatabase.FindAssets("t:RoomTheme", new[] { "Assets/HeartRoom/Themes" }))
+            {
+                var theme = AssetDatabase.LoadAssetAtPath<RoomTheme>(AssetDatabase.GUIDToAssetPath(guid));
+                if (theme != null) roomMgr.themeCatalog.Add(theme);
+            }
+        }
+
+        EditorUtility.SetDirty(roomMgr);
+        var scene = EditorSceneManager.GetActiveScene();
+        if (!string.IsNullOrEmpty(scene.path)) EditorSceneManager.SaveScene(scene);
+
+        Debug.Log($"[Game-M] Room 카탈로그 갱신 완료 — 아이템 {roomMgr.itemCatalog.Count}개, 테마 {roomMgr.themeCatalog.Count}개");
+    }
+
     // ── 현재 씬을 Main으로 저장 ──────────────────────────────────
     [MenuItem("Game-M/1. Save As Main Scene")]
     static void SaveAsMain()
@@ -256,9 +293,8 @@ public static class SceneSetup
 
     static void SetupHeartRoom()
     {
-        // 폴더 생성 (Resources 아래에 두면 자동 로드)
-        System.IO.Directory.CreateDirectory("Assets/Resources/HeartRoom/Items");
-        System.IO.Directory.CreateDirectory("Assets/Resources/HeartRoom/Themes");
+        System.IO.Directory.CreateDirectory("Assets/HeartRoom/Items");
+        System.IO.Directory.CreateDirectory("Assets/HeartRoom/Themes");
         System.IO.Directory.CreateDirectory("Assets/HeartRoom/Sprites");
         System.IO.Directory.CreateDirectory("Assets/HeartRoom/Prefabs");
         AssetDatabase.Refresh();
