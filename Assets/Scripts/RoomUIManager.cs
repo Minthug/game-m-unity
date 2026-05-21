@@ -32,8 +32,8 @@ public class RoomUIManager : MonoBehaviour
         if (openShopBtn  != null) openShopBtn.onClick.AddListener(OpenShop);
         if (closeShopBtn != null) closeShopBtn.onClick.AddListener(CloseShop);
 
-        ApplyKoreanFont();
-        RefreshShop();
+        RefreshShop();      // 버튼 먼저 생성
+        ApplyKoreanFont();  // 생성된 버튼 포함 전체 폰트 적용
         SetShopVisible(false);
     }
 
