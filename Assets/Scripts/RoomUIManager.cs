@@ -97,10 +97,10 @@ public class RoomUIManager : MonoBehaviour
 
     void SetupItemButton(GameObject btn, RoomItem item)
     {
-        // 아이콘
+        // 아이콘 (previewIcon 우선, 없으면 sprite)
         var icon = btn.transform.Find("Icon")?.GetComponent<Image>();
-        if (icon != null && item.sprite != null)
-            icon.sprite = item.sprite;
+        if (icon != null && item.ShopIcon != null)
+            icon.sprite = item.ShopIcon;
 
         // 이름
         var label = btn.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();

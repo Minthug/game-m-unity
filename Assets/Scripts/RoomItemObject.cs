@@ -23,15 +23,26 @@ public class RoomItemObject : MonoBehaviour
         col        = GetComponent<BoxCollider2D>();
         mainCam    = Camera.main;
 
-        sr.sprite       = data.sprite;
-        sr.sortingOrder = data.sortingOrder;
-
         float scl = overrideScale > 0f ? overrideScale : data.defaultScale;
         transform.localScale = Vector3.one * scl;
 
-        // 콜라이더 크기를 스프라이트에 맞춤
-        if (data.sprite != null)
-            col.size = data.sprite.bounds.size;
+        if (data.Is3D)
+        {
+            // 3D 프리팹: 자식으로 인스턴스화
+            sr.enabled = false;
+            var child = Instantiate(data.prefab, transform);
+            child.transform.localPosition = Vector3.zero;
+            child.transform.localRotation = Quaternion.identity;
+            col.size = Vector2.one; // 기본 콜라이더
+        }
+        else
+        {
+            // 2D 스프라이트
+            sr.sprite       = data.sprite;
+            sr.sortingOrder = data.sortingOrder;
+            if (data.sprite != null)
+                col.size = data.sprite.bounds.size;
+        }
     }
 
     void Update()
