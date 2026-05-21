@@ -249,10 +249,10 @@ public static class SceneSetup
         System.IO.Directory.CreateDirectory(envDir);
         AssetDatabase.Refresh();
 
-        // 대소문자 무관하게 PNG 파일 검색
+        // 대소문자 무관하게 "mist" 포함 PNG 파일 검색
         var pngs = System.IO.Directory.GetFiles(envDir, "*.png", System.IO.SearchOption.TopDirectoryOnly);
         string mistPng = System.Array.Find(pngs, p =>
-            System.IO.Path.GetFileNameWithoutExtension(p).ToLower() == "mist");
+            System.IO.Path.GetFileNameWithoutExtension(p).ToLower().Contains("mist"));
 
         if (mistPng == null)
         {

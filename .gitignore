@@ -18,6 +18,14 @@ MemoryCaptures/
 .DS_Store
 thumbs.db
 
+# Asset Store 패키지 (재배포 불가, 용량 큼)
+Assets/FREE Parallax Forest Background HQ/
+Assets/FREE Parallax Forest Background HQ.meta
+Assets/Low Poly Furniture/
+Assets/Low Poly Furniture.meta
+Assets/PixelFX_vol1/
+Assets/PixelFX_vol1.meta
+
 # Unity build output (copied to vite-app/public/unity)
 vite-app/public/unity/
 
