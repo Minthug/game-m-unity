@@ -32,6 +32,7 @@ public class SlimeManager : MonoBehaviour
     };
 
     readonly Dictionary<string, SlimeController> slimes = new();
+    bool _suppressSave;
 
     void Awake()
     {
@@ -43,6 +44,8 @@ public class SlimeManager : MonoBehaviour
 
     void Start()
     {
+        LoadSlimes();
+
         var text = PlayerPrefs.GetString("first_slime_text", "");
         if (string.IsNullOrEmpty(text)) return;
 
@@ -96,6 +99,7 @@ public class SlimeManager : MonoBehaviour
         {
             slimes.Remove(id);
             Destroy(s.gameObject);
+            if (!_suppressSave) SaveSlimes();
         }
     }
 
@@ -111,6 +115,7 @@ public class SlimeManager : MonoBehaviour
         var     expr       = s.SlimeExpression;
         var     color      = s.SlimeColor;
 
+        _suppressSave = true;
         DeleteSlime(id);
 
         // 두 자식을 좌우로 충분히 떨어진 위치에 스폰 (겹침 → 즉시 재합치기 방지)
@@ -123,6 +128,8 @@ public class SlimeManager : MonoBehaviour
             string  newId  = $"slime-split-{System.DateTime.Now.Ticks}-{i}";
             SpawnSlime(newId, "", expr, color, childStage, origin + offset);
         }
+        _suppressSave = false;
+        SaveSlimes();
         Debug.Log($"[SlimeManager] 분리: {id} → 2 × {childStage}단계");
     }
 
@@ -152,17 +159,20 @@ public class SlimeManager : MonoBehaviour
         var     expr      = s1.SlimeExpression;
         var     color     = s1.SlimeColor;
 
+        _suppressSave = true;
         DeleteSlime(id1);
         DeleteSlime(id2);
 
         string newId = $"slime-merged-{System.DateTime.Now.Ticks}";
         SpawnSlime(newId, "", expr, color, nextStage, midPos);
+        _suppressSave = false;
+        SaveSlimes();
         Debug.Log($"[SlimeManager] 합치기 완료 → {newId} stage={nextStage}");
     }
 
     // ── 내부 ─────────────────────────────────────────────────
 
-    void SpawnSlime(string id, string text, Expression expression, Color color, int stage, Vector3? overridePos = null)
+    void SpawnSlime(string id, string text, Expression expression, Color color, int stage, Vector3? overridePos = null, long createdAt = 0)
     {
         if (slimePrefab == null) { Debug.LogError("[SlimeManager] slimePrefab이 null — Setup Scene을 다시 실행하세요"); return; }
 
@@ -189,9 +199,10 @@ public class SlimeManager : MonoBehaviour
         if (sprite == null) Debug.LogWarning($"[SlimeManager] {expression} 스프라이트가 null — Setup Scene을 다시 실행하세요");
         sr.sprite = sprite;
 
-        ctrl.Init(id, expression, color, worldSize, stage);
+        ctrl.Init(id, text, expression, color, worldSize, stage, createdAt);
         slimes[id] = ctrl;
         go.name    = $"Slime_{id}";
+        if (!_suppressSave) SaveSlimes();
         Debug.Log($"[SlimeManager] 생성: {go.name} stage={stage} pos={pos} scale={worldSize}");
     }
 
@@ -218,6 +229,58 @@ public class SlimeManager : MonoBehaviour
         "contempt"  => Expression.Contempt,
         _           => Expression.Blank,
     };
+
+    // ── 저장 / 불러오기 ─────────────────────────────────────────
+
+    const string SAVE_KEY      = "slime_save";
+    const long   MAX_AGE_MS    = 7L * 24 * 60 * 60 * 1000; // 7일
+
+    void SaveSlimes()
+    {
+        var data = new SlimeSaveData();
+        foreach (var s in slimes.Values)
+        {
+            data.slimes.Add(new SlimeSaveEntry
+            {
+                id         = s.SlimeId,
+                expression = s.SlimeExpression.ToString().ToLower(),
+                color      = ColorUtil.ToHex(s.SlimeColor),
+                stage      = s.Stage,
+                text       = s.SlimeText ?? "",
+                createdAt  = s.CreatedAt,
+            });
+        }
+        PlayerPrefs.SetString(SAVE_KEY, JsonUtility.ToJson(data));
+        PlayerPrefs.Save();
+        Debug.Log($"[SlimeManager] 저장 완료 ({data.slimes.Count}마리)");
+    }
+
+    void LoadSlimes()
+    {
+        var json = PlayerPrefs.GetString(SAVE_KEY, "");
+        if (string.IsNullOrEmpty(json)) return;
+
+        SlimeSaveData data;
+        try { data = JsonUtility.FromJson<SlimeSaveData>(json); }
+        catch { Debug.LogWarning("[SlimeManager] 저장 데이터 파싱 실패"); return; }
+
+        if (data?.slimes == null) return;
+
+        long nowMs = ColorUtil.NowMs();
+        _suppressSave = true;
+        int loaded = 0;
+        foreach (var e in data.slimes)
+        {
+            if (nowMs - e.createdAt > MAX_AGE_MS) continue; // 7일 지난 슬라임 제거
+            var expr  = ParseExpression(e.expression);
+            var color = ColorUtil.FromHex(e.color);
+            int stage = (e.stage >= 1 && e.stage <= 3) ? e.stage : 1;
+            SpawnSlime(e.id, e.text, expr, color, stage, null, e.createdAt);
+            loaded++;
+        }
+        _suppressSave = false;
+        Debug.Log($"[SlimeManager] 불러오기 완료 ({loaded}마리)");
+    }
 
     public Expression GetDominantExpression()
     {

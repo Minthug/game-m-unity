@@ -74,6 +74,12 @@ public static class SceneSetup
     [MenuItem("Game-M/Setup Scene")]
     static void Setup()
     {
+        if (EditorApplication.isPlaying)
+        {
+            Debug.LogError("[Game-M] 플레이 모드 중에는 실행할 수 없어요. ■ 버튼으로 플레이를 멈춘 후 실행하세요.");
+            return;
+        }
+
         // 1. 슬라임 PNG들을 Sprite 타입으로 변환
         string[] slimePaths = {
             "Assets/Slimes/slime-angry.png",
@@ -152,7 +158,13 @@ public static class SceneSetup
         if (bgGO.GetComponent<BackgroundManager>() == null)
             bgGO.AddComponent<BackgroundManager>();
 
-        // 5. 카메라 설정
+        // 6. EnvironmentManager 생성
+        var existingEnv = Object.FindFirstObjectByType<EnvironmentManager>();
+        var envGO       = existingEnv != null ? existingEnv.gameObject : new GameObject("EnvironmentManager");
+        var envMgr      = envGO.GetComponent<EnvironmentManager>() ?? envGO.AddComponent<EnvironmentManager>();
+        SetupMistItem(envMgr);
+
+        // 7. 카메라 설정
         if (Camera.main != null)
         {
             Camera.main.transform.position = new Vector3(0f, 0f, -10f);
@@ -162,8 +174,11 @@ public static class SceneSetup
             Camera.main.orthographicSize   = 5f;
         }
 
-        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         AssetDatabase.SaveAssets();
+        var activeScene = EditorSceneManager.GetActiveScene();
+        EditorSceneManager.MarkSceneDirty(activeScene);
+        if (!string.IsNullOrEmpty(activeScene.path))
+            EditorSceneManager.SaveScene(activeScene);
         Debug.Log("씬 세팅 완료! SlimeManager와 Slime Prefab이 준비됐어요.");
     }
 
@@ -171,6 +186,11 @@ public static class SceneSetup
     [MenuItem("Game-M/1. Save As Main Scene")]
     static void SaveAsMain()
     {
+        if (EditorApplication.isPlaying)
+        {
+            Debug.LogError("[Game-M] 플레이 모드 중에는 씬을 저장할 수 없어요. 플레이를 멈춘 후 실행하세요.");
+            return;
+        }
         System.IO.Directory.CreateDirectory("Assets/Scenes");
         EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), "Assets/Scenes/Main.unity");
         UpdateBuildSettings();
@@ -220,4 +240,65 @@ public static class SceneSetup
 
     static Sprite LoadSprite(string path) =>
         AssetDatabase.LoadAssetAtPath<Sprite>(path);
+
+    static void SetupMistItem(EnvironmentManager envMgr)
+    {
+        const string envDir    = "Assets/Environment";
+        const string mistAsset = "Assets/Environment/Mist.asset";
+
+        System.IO.Directory.CreateDirectory(envDir);
+        AssetDatabase.Refresh();
+
+        // 대소문자 무관하게 PNG 파일 검색
+        var pngs = System.IO.Directory.GetFiles(envDir, "*.png", System.IO.SearchOption.TopDirectoryOnly);
+        string mistPng = System.Array.Find(pngs, p =>
+            System.IO.Path.GetFileNameWithoutExtension(p).ToLower() == "mist");
+
+        if (mistPng == null)
+        {
+            Debug.Log($"[Game-M] {envDir}/ 안에 mist.png 없음 — 폴더는 생성됨, 파일 넣고 Setup Scene 재실행");
+            Debug.Log($"[Game-M] 현재 {envDir}/ 에 있는 PNG: {string.Join(", ", System.Array.ConvertAll(pngs, System.IO.Path.GetFileName))}");
+            return;
+        }
+
+        // 경로 구분자 통일
+        mistPng = mistPng.Replace('\\', '/');
+
+        // PNG → Sprite 임포트
+        var importer = AssetImporter.GetAtPath(mistPng) as TextureImporter;
+        if (importer != null)
+        {
+            importer.textureType      = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.wrapMode         = TextureWrapMode.Repeat;
+            importer.filterMode       = FilterMode.Bilinear;
+            AssetDatabase.ImportAsset(mistPng, ImportAssetOptions.ForceUpdate);
+        }
+
+        // EnvironmentItem ScriptableObject 생성 or 로드
+        var mistItem = AssetDatabase.LoadAssetAtPath<EnvironmentItem>(mistAsset);
+        if (mistItem == null)
+        {
+            mistItem             = ScriptableObject.CreateInstance<EnvironmentItem>();
+            mistItem.itemId      = "mist";
+            mistItem.displayName = "안개";
+            mistItem.alpha       = 0.25f;
+            mistItem.scale       = 1.2f;
+            mistItem.scrollSpeedX = 0.15f;
+            mistItem.sortingOrder = 5;
+            mistItem.isUnlocked  = true;
+            mistItem.price       = 0;
+            AssetDatabase.CreateAsset(mistItem, mistAsset);
+        }
+
+        mistItem.sprite = LoadSprite(mistPng);
+        EditorUtility.SetDirty(mistItem);
+
+        if (!envMgr.catalog.Contains(mistItem))
+            envMgr.catalog.Add(mistItem);
+
+        EditorUtility.SetDirty(envMgr);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[Game-M] Mist 환경 아이템 세팅 완료");
+    }
 }

@@ -6,9 +6,11 @@ using UnityEngine.InputSystem;
 public class SlimeController : MonoBehaviour
 {
     public string     SlimeId         { get; private set; }
+    public string     SlimeText       { get; private set; }
     public Expression SlimeExpression { get; private set; }
     public int        Stage           { get; private set; }
     public Color      SlimeColor      { get; private set; }
+    public long       CreatedAt       { get; private set; }
 
     Rigidbody2D    rb;
     SpriteRenderer sr;
@@ -51,12 +53,14 @@ public class SlimeController : MonoBehaviour
         );
     }
 
-    public void Init(string id, Expression expression, Color color, float worldSize, int stage = 1)
+    public void Init(string id, string text, Expression expression, Color color, float worldSize, int stage = 1, long createdAt = 0)
     {
         SlimeId         = id;
+        SlimeText       = text;
         SlimeExpression = expression;
         SlimeColor      = color;
         Stage           = Mathf.Clamp(stage, 1, 3);
+        CreatedAt       = createdAt > 0 ? createdAt : ColorUtil.NowMs();
         sr.color        = Color.white;
         originalSize    = worldSize;
         targetScale     = Vector3.one * worldSize;

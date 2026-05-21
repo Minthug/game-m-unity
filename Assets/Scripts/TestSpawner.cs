@@ -54,5 +54,9 @@ public class TestSpawner : MonoBehaviour
         // P: 첫 번째 슬라임 팝 (꾹 누르기 효과 테스트)
         if (kb.pKey.wasPressedThisFrame)
             SlimeManager.Instance?.PopFirst();
+
+        // M: 첫 번째 환경 아이템 토글 (Mist 등)
+        if (kb.mKey.wasPressedThisFrame)
+            EnvironmentManager.Instance?.ToggleFirst();
     }
 }
