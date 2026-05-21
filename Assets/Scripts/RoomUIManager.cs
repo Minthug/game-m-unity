@@ -32,8 +32,17 @@ public class RoomUIManager : MonoBehaviour
         if (openShopBtn  != null) openShopBtn.onClick.AddListener(OpenShop);
         if (closeShopBtn != null) closeShopBtn.onClick.AddListener(CloseShop);
 
+        ApplyKoreanFont();
         RefreshShop();
         SetShopVisible(false);
+    }
+
+    void ApplyKoreanFont()
+    {
+        var font = Resources.Load<TMPro.TMP_FontAsset>("KoreanFont");
+        if (font == null) { Debug.LogWarning("[RoomUI] KoreanFont 없음 — Game-M/0. Setup Korean Font 먼저 실행"); return; }
+        foreach (var tmp in GetComponentsInChildren<TMPro.TextMeshProUGUI>(true))
+            tmp.font = font;
     }
 
     // ── 상점 열기/닫기 ─────────────────────────────────────────────
