@@ -81,6 +81,14 @@ public static class SceneSetup
             return;
         }
 
+        // 0. EventSystem 항상 먼저 교체 (StandaloneInputModule → InputSystemUIInputModule)
+        var oldES = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+        if (oldES != null) Object.DestroyImmediate(oldES.gameObject);
+        var esGO2 = new GameObject("EventSystem");
+        esGO2.AddComponent<UnityEngine.EventSystems.EventSystem>();
+        esGO2.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        Debug.Log("[Game-M] EventSystem 재생성 완료 (InputSystemUIInputModule)");
+
         // 1. 슬라임 PNG들을 Sprite 타입으로 변환
         string[] slimePaths = {
             "Assets/Slimes/slime-angry.png",
@@ -299,13 +307,7 @@ public static class SceneSetup
 
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // EventSystem — 기존 것 제거 후 New Input System 모듈로 새로 생성
-        var existingES = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
-        if (existingES != null) Object.DestroyImmediate(existingES.gameObject);
-        var esGO = new GameObject("EventSystem");
-        esGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
-        esGO.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-        Debug.Log("[Game-M] EventSystem (InputSystemUIInputModule) 생성 완료");
+        // EventSystem은 Setup() 최상단에서 처리
 
         // ── 상점 열기 버튼 (우하단) ──────────────────────────────
         var openBtnGO  = MakeButton(canvasGO.transform, "OpenShopBtn", "🛋️ 방 꾸미기");
