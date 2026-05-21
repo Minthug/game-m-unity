@@ -28,6 +28,10 @@ public class RoomUIManager : MonoBehaviour
 
     void Start()
     {
+        // SceneSetup의 AddListener는 씬에 저장 안 되므로 런타임에 연결
+        if (openShopBtn  != null) openShopBtn.onClick.AddListener(OpenShop);
+        if (closeShopBtn != null) closeShopBtn.onClick.AddListener(CloseShop);
+
         RefreshShop();
         SetShopVisible(false);
     }

@@ -299,25 +299,13 @@ public static class SceneSetup
 
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // EventSystem — New Input System 전용 모듈 사용
+        // EventSystem — 기존 것 제거 후 New Input System 모듈로 새로 생성
         var existingES = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
-        if (existingES == null)
-        {
-            var esGO = new GameObject("EventSystem");
-            esGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            esGO.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-        }
-        else
-        {
-            // 구버전 StandaloneInputModule이 있으면 교체
-            var oldModule = existingES.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-            if (oldModule != null)
-            {
-                Object.DestroyImmediate(oldModule);
-                existingES.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-                Debug.Log("[Game-M] StandaloneInputModule → InputSystemUIInputModule 교체 완료");
-            }
-        }
+        if (existingES != null) Object.DestroyImmediate(existingES.gameObject);
+        var esGO = new GameObject("EventSystem");
+        esGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
+        esGO.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        Debug.Log("[Game-M] EventSystem (InputSystemUIInputModule) 생성 완료");
 
         // ── 상점 열기 버튼 (우하단) ──────────────────────────────
         var openBtnGO  = MakeButton(canvasGO.transform, "OpenShopBtn", "🛋️ 방 꾸미기");
@@ -454,9 +442,7 @@ public static class SceneSetup
         var closeBtn = closeBtnGO.GetComponent<Button>();
         uiMgr.openShopBtn  = openBtn;
         uiMgr.closeShopBtn = closeBtn;
-
-        openBtn.onClick.AddListener(uiMgr.OpenShop);
-        closeBtn.onClick.AddListener(uiMgr.CloseShop);
+        // onClick은 RoomUIManager.Start()에서 런타임에 연결
 
         EditorUtility.SetDirty(uiMgrGO);
         Debug.Log("[Game-M] RoomUI 생성 완료");
