@@ -38,8 +38,20 @@ public class SlimeManager : MonoBehaviour
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+        FixEventSystem();
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += (s, m) =>
             Debug.LogWarning($"[SlimeManager] 씬 로드 감지: {s.name} / 현재 슬라임 수={slimes.Count}");
+    }
+
+    static void FixEventSystem()
+    {
+        var es = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+        if (es == null) return;
+        var old = es.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+        if (old == null) return;
+        Destroy(old);
+        es.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        Debug.Log("[SlimeManager] StandaloneInputModule → InputSystemUIInputModule 자동 교체");
     }
 
     void Start()
