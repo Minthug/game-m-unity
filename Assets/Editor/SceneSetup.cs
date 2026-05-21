@@ -299,12 +299,24 @@ public static class SceneSetup
 
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        // EventSystem (없으면 생성)
-        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+        // EventSystem — New Input System 전용 모듈 사용
+        var existingES = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+        if (existingES == null)
         {
             var esGO = new GameObject("EventSystem");
             esGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            esGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            esGO.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+        }
+        else
+        {
+            // 구버전 StandaloneInputModule이 있으면 교체
+            var oldModule = existingES.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            if (oldModule != null)
+            {
+                Object.DestroyImmediate(oldModule);
+                existingES.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+                Debug.Log("[Game-M] StandaloneInputModule → InputSystemUIInputModule 교체 완료");
+            }
         }
 
         // ── 상점 열기 버튼 (우하단) ──────────────────────────────
