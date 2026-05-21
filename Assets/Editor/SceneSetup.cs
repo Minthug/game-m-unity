@@ -176,6 +176,7 @@ public static class SceneSetup
         // 7. HeartRoom 폴더 + RoomManager + UI 생성
         SetupHeartRoom();
         SetupRoomUI();
+        RefreshRoomCatalog(); // 아이템 자동 등록
 
         // 7. 카메라 설정
         if (Camera.main != null)

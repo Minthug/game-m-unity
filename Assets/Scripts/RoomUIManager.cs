@@ -88,7 +88,12 @@ public class RoomUIManager : MonoBehaviour
             Destroy(child.gameObject);
 
         var catalog = RoomManager.Instance?.itemCatalog;
-        if (catalog == null) return;
+        if (catalog == null || catalog.Count == 0)
+        {
+            Debug.LogWarning("[RoomUI] 카탈로그 비어있음 — Game-M/Refresh Room Catalog 실행 필요");
+            return;
+        }
+        Debug.Log($"[RoomUI] 상점 갱신: {catalog.Count}개");
 
         foreach (var item in catalog)
         {
