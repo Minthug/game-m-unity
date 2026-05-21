@@ -208,20 +208,27 @@ public static class SceneSetup
         roomMgr.itemCatalog.Clear();
         roomMgr.themeCatalog.Clear();
 
+        // 타입 필터 대신 폴더 내 모든 에셋을 로드해서 타입 확인
         if (System.IO.Directory.Exists("Assets/HeartRoom/Items"))
         {
-            foreach (var guid in AssetDatabase.FindAssets("t:RoomItem", new[] { "Assets/HeartRoom/Items" }))
+            var guids = AssetDatabase.FindAssets("", new[] { "Assets/HeartRoom/Items" });
+            Debug.Log($"[Game-M] HeartRoom/Items 에셋 {guids.Length}개 발견");
+            foreach (var guid in guids)
             {
-                var item = AssetDatabase.LoadAssetAtPath<RoomItem>(AssetDatabase.GUIDToAssetPath(guid));
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var item = AssetDatabase.LoadAssetAtPath<RoomItem>(path);
                 if (item != null) roomMgr.itemCatalog.Add(item);
+                else Debug.Log($"[Game-M] RoomItem 아님: {path}");
             }
         }
+        else Debug.LogWarning("[Game-M] Assets/HeartRoom/Items 폴더 없음");
 
         if (System.IO.Directory.Exists("Assets/HeartRoom/Themes"))
         {
-            foreach (var guid in AssetDatabase.FindAssets("t:RoomTheme", new[] { "Assets/HeartRoom/Themes" }))
+            foreach (var guid in AssetDatabase.FindAssets("", new[] { "Assets/HeartRoom/Themes" }))
             {
-                var theme = AssetDatabase.LoadAssetAtPath<RoomTheme>(AssetDatabase.GUIDToAssetPath(guid));
+                var path  = AssetDatabase.GUIDToAssetPath(guid);
+                var theme = AssetDatabase.LoadAssetAtPath<RoomTheme>(path);
                 if (theme != null) roomMgr.themeCatalog.Add(theme);
             }
         }
