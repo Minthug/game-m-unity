@@ -41,7 +41,10 @@ public class RoomUIManager : MonoBehaviour
     {
         var font = Resources.Load<TMPro.TMP_FontAsset>("KoreanFont");
         if (font == null) { Debug.LogWarning("[RoomUI] KoreanFont 없음 — Game-M/0. Setup Korean Font 먼저 실행"); return; }
-        foreach (var tmp in GetComponentsInChildren<TMPro.TextMeshProUGUI>(true))
+
+        // RoomUIManager는 Canvas의 자식 — Canvas 전체에서 검색해야 형제 오브젝트도 포함됨
+        var root = rootCanvas != null ? rootCanvas.transform : transform.root;
+        foreach (var tmp in root.GetComponentsInChildren<TMPro.TextMeshProUGUI>(true))
             tmp.font = font;
     }
 
