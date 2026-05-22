@@ -11,7 +11,7 @@ public class RoomUIManager : MonoBehaviour
     [Header("UI 참조 (Setup Scene이 자동 생성)")]
     public Canvas     rootCanvas;
     public GameObject shopPanel;
-    public Transform  itemGrid;
+    public RectTransform itemGrid;
     public Button     openShopBtn;
     public Button     closeShopBtn;
 
@@ -50,9 +50,14 @@ public class RoomUIManager : MonoBehaviour
 
     // ── 상점 열기/닫기 ─────────────────────────────────────────────
 
-    public void OpenShop()  => SetShopVisible(true);
-    public void CloseShop() => SetShopVisible(false);
-    public void ToggleShop() => SetShopVisible(!shopOpen);
+    public void OpenShop()
+    {
+        RefreshShop();       // 열 때마다 최신 카탈로그 반영
+        ApplyKoreanFont();
+        SetShopVisible(true);
+    }
+    public void CloseShop()  => SetShopVisible(false);
+    public void ToggleShop() { if (shopOpen) CloseShop(); else OpenShop(); }
 
     void SetShopVisible(bool visible)
     {
@@ -82,7 +87,9 @@ public class RoomUIManager : MonoBehaviour
 
     public void RefreshShop()
     {
-        if (itemGrid == null || itemButtonPrefab == null) return;
+        Debug.Log($"[RoomUI] RefreshShop — itemGrid:{itemGrid != null}, prefab:{itemButtonPrefab != null}, RoomMgr:{RoomManager.Instance != null}");
+        if (itemGrid == null) { Debug.LogError("[RoomUI] itemGrid 없음 — Setup Scene 재실행 필요"); return; }
+        if (itemButtonPrefab == null) { Debug.LogError("[RoomUI] itemButtonPrefab 없음 — Setup Scene 재실행 필요"); return; }
 
         foreach (Transform child in itemGrid)
             Destroy(child.gameObject);
@@ -101,14 +108,28 @@ public class RoomUIManager : MonoBehaviour
             var btn = Instantiate(itemButtonPrefab, itemGrid);
             SetupItemButton(btn, item);
         }
+
+        // 레이아웃 즉시 재계산 (ContentSizeFitter가 다음 프레임까지 기다리지 않도록)
+        UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(itemGrid);
     }
 
     void SetupItemButton(GameObject btn, RoomItem item)
     {
-        // 아이콘 (previewIcon 우선, 없으면 sprite)
+        // 아이콘 (previewIcon 우선, 없으면 sprite, 둘 다 없으면 placeholder)
         var icon = btn.transform.Find("Icon")?.GetComponent<Image>();
-        if (icon != null && item.ShopIcon != null)
-            icon.sprite = item.ShopIcon;
+        if (icon != null)
+        {
+            if (item.ShopIcon != null)
+            {
+                icon.sprite = item.ShopIcon;
+                icon.color  = Color.white;
+            }
+            else
+            {
+                icon.sprite = null;
+                icon.color  = new Color(0.25f, 0.25f, 0.30f); // 아이콘 없는 3D 아이템 placeholder
+            }
+        }
 
         // 이름
         var label = btn.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();

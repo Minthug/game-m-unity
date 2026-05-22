@@ -71,6 +71,15 @@ public static class SceneSetup
         Debug.Log("온보딩 PlayerPrefs 리셋 완료");
     }
 
+    // ── 방 배치 저장 데이터 리셋 (테스트용) ─────────────────────
+    [MenuItem("Game-M/Reset Room Save")]
+    static void ResetRoomSave()
+    {
+        PlayerPrefs.DeleteKey("room_save");
+        PlayerPrefs.Save();
+        Debug.Log("[Game-M] 방 배치 저장 데이터 초기화 완료");
+    }
+
     // ── Main 씬 세팅 (슬라임 월드) ───────────────────────────────
     [MenuItem("Game-M/Setup Scene")]
     static void Setup()
@@ -205,37 +214,82 @@ public static class SceneSetup
         var roomMgr = Object.FindFirstObjectByType<RoomManager>();
         if (roomMgr == null) { Debug.LogError("[Game-M] RoomManager가 씬에 없음 — Setup Scene 먼저 실행"); return; }
 
+        const string itemsDir = "Assets/HeartRoom/Items";
+        System.IO.Directory.CreateDirectory(itemsDir);
+        AssetDatabase.Refresh();
+
+        // FBX / 프리팹 파일 발견 시 RoomItem ScriptableObject 자동 생성
+        var modelExtensions = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase) { ".fbx", ".obj", ".prefab" };
+        var spriteExtensions = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".psd", ".tga" };
+
+        foreach (var file in System.IO.Directory.GetFiles(itemsDir, "*", System.IO.SearchOption.AllDirectories))
+        {
+            var ext = System.IO.Path.GetExtension(file);
+            if (!modelExtensions.Contains(ext) && !spriteExtensions.Contains(ext)) continue;
+
+            var filePath = file.Replace('\\', '/');
+            var baseName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+            var assetPath = $"{itemsDir}/{baseName}.asset";
+
+            if (System.IO.File.Exists(assetPath)) continue; // 이미 있으면 스킵
+
+            var roomItem = ScriptableObject.CreateInstance<RoomItem>();
+            roomItem.itemId      = baseName.ToLower().Replace(" ", "_");
+            roomItem.displayName = baseName;
+            roomItem.defaultScale = 1f;
+            roomItem.isUnlocked  = true;
+            roomItem.price       = 0;
+
+            if (modelExtensions.Contains(ext))
+            {
+                // FBX/프리팹 → prefab 필드에 할당
+                var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(filePath);
+                if (prefabAsset != null) roomItem.prefab = prefabAsset;
+            }
+            else
+            {
+                // 스프라이트로 임포트
+                var importer = AssetImporter.GetAtPath(filePath) as TextureImporter;
+                if (importer != null)
+                {
+                    importer.textureType      = TextureImporterType.Sprite;
+                    importer.spriteImportMode = SpriteImportMode.Single;
+                    AssetDatabase.ImportAsset(filePath, ImportAssetOptions.ForceUpdate);
+                }
+                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(filePath);
+                if (sprite != null) roomItem.sprite = sprite;
+            }
+
+            AssetDatabase.CreateAsset(roomItem, assetPath);
+            Debug.Log($"[Game-M] RoomItem 자동 생성: {assetPath}");
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+
+        // .asset 파일 전부 카탈로그에 등록
         roomMgr.itemCatalog.Clear();
         roomMgr.themeCatalog.Clear();
 
-        // 타입 필터 대신 폴더 내 모든 에셋을 로드해서 타입 확인
-        if (System.IO.Directory.Exists("Assets/HeartRoom/Items"))
-        {
-            var guids = AssetDatabase.FindAssets("", new[] { "Assets/HeartRoom/Items" });
-            Debug.Log($"[Game-M] HeartRoom/Items 에셋 {guids.Length}개 발견");
-            foreach (var guid in guids)
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                var item = AssetDatabase.LoadAssetAtPath<RoomItem>(path);
-                if (item != null) roomMgr.itemCatalog.Add(item);
-                else Debug.Log($"[Game-M] RoomItem 아님: {path}");
-            }
-        }
-        else Debug.LogWarning("[Game-M] Assets/HeartRoom/Items 폴더 없음");
+        LoadAssetsFromFolder(itemsDir, path => {
+            var item = AssetDatabase.LoadAssetAtPath<RoomItem>(path);
+            if (item != null) roomMgr.itemCatalog.Add(item);
+        });
 
-        if (System.IO.Directory.Exists("Assets/HeartRoom/Themes"))
-        {
-            foreach (var guid in AssetDatabase.FindAssets("", new[] { "Assets/HeartRoom/Themes" }))
-            {
-                var path  = AssetDatabase.GUIDToAssetPath(guid);
-                var theme = AssetDatabase.LoadAssetAtPath<RoomTheme>(path);
-                if (theme != null) roomMgr.themeCatalog.Add(theme);
-            }
-        }
+        LoadAssetsFromFolder("Assets/HeartRoom/Themes", path => {
+            var theme = AssetDatabase.LoadAssetAtPath<RoomTheme>(path);
+            if (theme != null) roomMgr.themeCatalog.Add(theme);
+        });
 
         EditorUtility.SetDirty(roomMgr);
+        AssetDatabase.SaveAssets();
+
         var scene = EditorSceneManager.GetActiveScene();
-        if (!string.IsNullOrEmpty(scene.path)) EditorSceneManager.SaveScene(scene);
+        EditorSceneManager.MarkSceneDirty(scene);
+        if (!string.IsNullOrEmpty(scene.path))
+            EditorSceneManager.SaveScene(scene);
+        else
+            Debug.LogWarning("[Game-M] 씬 경로 없음 — Game-M/1. Save As Main Scene 으로 저장 후 다시 실행하세요");
 
         Debug.Log($"[Game-M] Room 카탈로그 갱신 완료 — 아이템 {roomMgr.itemCatalog.Count}개, 테마 {roomMgr.themeCatalog.Count}개");
     }
@@ -332,11 +386,29 @@ public static class SceneSetup
         Debug.Log("[Game-M] HeartRoom 세팅 완료 — Assets/HeartRoom/ 폴더 생성됨");
     }
 
+    [MenuItem("Game-M/Recreate Room UI")]
+    static void RecreateRoomUI()
+    {
+        if (EditorApplication.isPlaying) { Debug.LogError("[Game-M] 플레이 중에는 실행 불가"); return; }
+        var uiMgrExisting = Object.FindFirstObjectByType<RoomUIManager>();
+        if (uiMgrExisting != null)
+        {
+            var existingCanvas = uiMgrExisting.rootCanvas;
+            if (existingCanvas != null) Object.DestroyImmediate(existingCanvas.gameObject);
+            else Object.DestroyImmediate(uiMgrExisting.gameObject);
+        }
+        SetupRoomUI();
+        var scene = EditorSceneManager.GetActiveScene();
+        EditorSceneManager.MarkSceneDirty(scene);
+        if (!string.IsNullOrEmpty(scene.path)) EditorSceneManager.SaveScene(scene);
+        Debug.Log("[Game-M] Room UI 재생성 완료");
+    }
+
     static void SetupRoomUI()
     {
-        // Canvas 찾기 or 생성
+        // 이미 있으면 스킵 (강제 재생성은 Game-M/Recreate Room UI 사용)
         var uiMgrExisting = Object.FindFirstObjectByType<RoomUIManager>();
-        if (uiMgrExisting != null) { Debug.Log("[Game-M] RoomUI 이미 존재 — 스킵"); return; }
+        if (uiMgrExisting != null) { Debug.Log("[Game-M] RoomUI 이미 존재 — 스킵 (재생성: Game-M/Recreate Room UI)"); return; }
 
         // Canvas
         var canvasGO = new GameObject("RoomCanvas");
@@ -354,7 +426,7 @@ public static class SceneSetup
         // EventSystem은 Setup() 최상단에서 처리
 
         // ── 상점 열기 버튼 (우하단) ──────────────────────────────
-        var openBtnGO  = MakeButton(canvasGO.transform, "OpenShopBtn", "🛋️ 방 꾸미기");
+        var openBtnGO  = MakeButton(canvasGO.transform, "OpenShopBtn", "방 꾸미기");
         var openRect   = openBtnGO.GetComponent<RectTransform>();
         openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 0f);
         openRect.pivot     = new Vector2(1f, 0f);
@@ -374,7 +446,7 @@ public static class SceneSetup
         panelRect.anchoredPosition = new Vector2(0f, 0f);
 
         // 닫기 버튼
-        var closeBtnGO = MakeButton(panelGO.transform, "CloseBtn", "✕ 닫기");
+        var closeBtnGO = MakeButton(panelGO.transform, "CloseBtn", "닫기");
         var closeRect  = closeBtnGO.GetComponent<RectTransform>();
         closeRect.anchorMin = closeRect.anchorMax = new Vector2(1f, 1f);
         closeRect.pivot     = new Vector2(1f, 1f);
@@ -391,11 +463,10 @@ public static class SceneSetup
         scrollRt.offsetMin        = new Vector2(16f, 16f);
         scrollRt.offsetMax        = new Vector2(-16f, -60f);
 
-        // Viewport
+        // Viewport — RectMask2D (URP에서 Mask보다 안정적)
         var vpGO  = new GameObject("Viewport");
         vpGO.transform.SetParent(scrollGO.transform, false);
-        vpGO.AddComponent<Image>().color = Color.clear;
-        vpGO.AddComponent<Mask>().showMaskGraphic = false;
+        vpGO.AddComponent<RectMask2D>();
         var vpRt  = vpGO.GetComponent<RectTransform>();
         vpRt.anchorMin = Vector2.zero; vpRt.anchorMax = Vector2.one;
         vpRt.offsetMin = vpRt.offsetMax = Vector2.zero;
@@ -465,7 +536,7 @@ public static class SceneSetup
             var lockRt  = lockGO.GetComponent<RectTransform>();
             lockRt.anchorMin = Vector2.zero; lockRt.anchorMax = Vector2.one;
             lockRt.offsetMin = lockRt.offsetMax = Vector2.zero;
-            var lockLabel = MakeTMP(lockGO.transform, "LockIcon", "🔒", 22f);
+            var lockLabel = MakeTMP(lockGO.transform, "LockIcon", "잠금", 16f);
             var llRt = lockLabel.GetComponent<RectTransform>();
             llRt.anchorMin = Vector2.zero; llRt.anchorMax = Vector2.one;
             llRt.offsetMin = llRt.offsetMax = Vector2.zero;
@@ -481,7 +552,7 @@ public static class SceneSetup
 
         uiMgr.rootCanvas      = canvas;
         uiMgr.shopPanel       = panelGO;
-        uiMgr.itemGrid        = contentGO.transform;
+        uiMgr.itemGrid        = contentRt;
         uiMgr.itemButtonPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(itemBtnPath);
 
         var openBtn  = openBtnGO.GetComponent<Button>();
@@ -520,6 +591,22 @@ public static class SceneSetup
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color     = Color.white;
         return go;
+    }
+
+    static void LoadAssetsFromFolder(string folder, System.Action<string> onLoad)
+    {
+        if (!System.IO.Directory.Exists(folder))
+        {
+            Debug.LogWarning($"[Game-M] 폴더 없음: {folder}");
+            return;
+        }
+        var files = System.IO.Directory.GetFiles(folder, "*.asset", System.IO.SearchOption.AllDirectories);
+        Debug.Log($"[Game-M] {folder}: .asset {files.Length}개 발견");
+        foreach (var file in files)
+        {
+            var path = file.Replace('\\', '/');
+            onLoad(path);
+        }
     }
 
     static void SetupMistItem(EnvironmentManager envMgr)
