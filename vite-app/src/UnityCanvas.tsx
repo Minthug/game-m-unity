@@ -10,21 +10,60 @@ interface Props {
   onLoaded?: () => void;
   onError?: (e: Error) => void;
   onReady?: (send: SendFn) => void;
+  onRequestInput?: (placeholder: string) => void; // Unity가 채팅창 열기 요청
 }
 
 export default function UnityCanvas({
-  basePath = '/unity',
-  loaderFile = 'game-m-unity.loader.js',
-  fileBasename = 'game-m-unity',
+  basePath = '/unity/Build',
+  loaderFile = 'unity.loader.js',
+  fileBasename = 'unity',
   onProgress,
   onLoaded,
   onError,
   onReady,
+  onRequestInput,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const unityInstanceRef = useRef<any>(null);
   const [progress, setProgress] = useState(0);
   const [loaded, setLoaded] = useState(false);
+
+  // Unity → React 메시지 수신
+  useEffect(() => {
+    (window as any).onUnityMessage = (json: string) => {
+      let msg: any;
+      try { msg = JSON.parse(json); } catch { return; }
+
+      switch (msg.type) {
+        case 'storage_set':
+          try { localStorage.setItem(msg.key, msg.value); } catch {}
+          break;
+
+        case 'storage_get': {
+          const value = localStorage.getItem(msg.key) ?? '';
+          // Unity가 콜백을 기다리는 경우 SendMessage로 돌려줌
+          unityInstanceRef.current?.SendMessage(
+            'StorageCallback', 'OnStorageResult',
+            JSON.stringify({ key: msg.key, value })
+          );
+          break;
+        }
+
+        case 'haptic':
+          if ('vibrate' in navigator) navigator.vibrate(msg.payload === 'heavy' ? 30 : 10);
+          break;
+
+        case 'request_text_input':
+          onRequestInput?.(msg.placeholder ?? '');
+          break;
+
+        default:
+          console.log('[Unity→Web]', msg);
+      }
+    };
+
+    return () => { (window as any).onUnityMessage = null; };
+  }, [onRequestInput]);
 
   useEffect(() => {
     let mounted = true;
@@ -41,20 +80,19 @@ export default function UnityCanvas({
       containerRef.current.appendChild(canvas);
 
       if (typeof (window as any).createUnityInstance !== 'function') {
-        const err = new Error('createUnityInstance not found');
-        onError?.(err);
+        onError?.(new Error('createUnityInstance not found'));
         return;
       }
 
       (window as any)
         .createUnityInstance(canvas, {
-          dataUrl: `${basePath}/${fileBasename}.data.br`,
-          frameworkUrl: `${basePath}/${fileBasename}.framework.js.br`,
-          codeUrl: `${basePath}/${fileBasename}.wasm.br`,
+          dataUrl:            `${basePath}/${fileBasename}.data.br`,
+          frameworkUrl:       `${basePath}/${fileBasename}.framework.js.br`,
+          codeUrl:            `${basePath}/${fileBasename}.wasm.br`,
           streamingAssetsUrl: 'StreamingAssets',
-          companyName: 'Minthug',
-          productName: 'game-m',
-          productVersion: '1.0',
+          companyName:        'Minthug',
+          productName:        'game-m',
+          productVersion:     '1.0',
         }, (p: number) => {
           if (!mounted) return;
           setProgress(Math.round(p * 100));
@@ -68,32 +106,22 @@ export default function UnityCanvas({
           onReady?.((obj, method, param) => instance.SendMessage(obj, method, param));
         })
         .catch((e: any) => {
-          if (mounted) setLoaded(true); // 로딩 화면 제거
+          if (mounted) setLoaded(true);
           onError?.(e instanceof Error ? e : new Error(String(e)));
         });
     };
 
     script.onerror = () => {
-      if (mounted) setLoaded(true); // 로딩 화면 제거 (파일 없어도 UI 테스트 가능)
-      onError?.(new Error('Failed to load Unity loader'));
+      if (mounted) setLoaded(true);
+      onError?.(new Error('Unity 빌드 파일 없음 — UI 테스트 모드'));
     };
+
     document.body.appendChild(script);
 
     return () => {
       mounted = false;
       unityInstanceRef.current?.Quit?.().catch(() => {});
       try { document.body.removeChild(script); } catch {}
-    };
-  }, []);
-
-  // Unity → React 메시지 수신 진입점
-  useEffect(() => {
-    (window as any).onUnityMessage = (json: string) => {
-      try {
-        const msg = JSON.parse(json);
-        console.log('[Unity→Web]', msg);
-        // TODO: msg.type 에 따라 Toss SDK 호출 (Storage, haptic 등)
-      } catch {}
     };
   }, []);
 
@@ -107,10 +135,7 @@ export default function UnityCanvas({
           color: 'rgba(220,220,240,0.7)', gap: 16,
         }}>
           <div style={{ fontSize: 18, fontWeight: 600 }}>들어줄게</div>
-          <div style={{
-            width: 200, height: 4, borderRadius: 2,
-            background: 'rgba(255,255,255,0.1)',
-          }}>
+          <div style={{ width: 200, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.1)' }}>
             <div style={{
               width: `${progress}%`, height: '100%', borderRadius: 2,
               background: 'rgba(155,135,255,0.8)',

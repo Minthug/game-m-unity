@@ -52,6 +52,13 @@ public class BackgroundManager : MonoBehaviour
         foreach (var kv in psMap)
             kv.Value.SetActive(kv.Key == e);
         RoomUIManager.Instance?.ApplyEmotion(e);
+
+        // 슬픔 감정이 지배적일 때만 Mist 활성화
+        if (e == Expression.Sad)
+            EnvironmentManager.Instance?.Activate("mist");
+        else
+            EnvironmentManager.Instance?.Deactivate("mist");
+
         Debug.Log($"[BG] 감정 전환 → {e}");
     }
 

@@ -4,7 +4,6 @@ import UnityCanvas from './UnityCanvas';
 type SendFn = (obj: string, method: string, param: string) => void;
 type Expression = 'angry' | 'sad' | 'fear' | 'happy' | 'disgust' | 'contempt' | 'surprised' | 'blank';
 
-// game-m 참고: 키워드 기반 감정 감지
 const KEYWORD_WEIGHTS: Record<Expression, Array<[string, number]>> = {
   angry: [
     ['씨발', 4], ['씨바', 4], ['시발', 4], ['썅', 4], ['개새', 4],
@@ -47,22 +46,6 @@ const KEYWORD_WEIGHTS: Record<Expression, Array<[string, number]>> = {
   blank: [],
 };
 
-const EXPRESSION_EMOJI: Record<Expression, string> = {
-  angry: '😡', sad: '😢', fear: '😨', happy: '😊',
-  disgust: '🤢', contempt: '😒', surprised: '😲', blank: '🫧',
-};
-
-const EXPRESSION_COLOR: Record<Expression, string> = {
-  angry:    '#ff4444',
-  sad:      '#4488ff',
-  fear:     '#9966ff',
-  happy:    '#ffaa00',
-  disgust:  '#44cc66',
-  contempt: '#99aabb',
-  surprised:'#cc44ff',
-  blank:    '#888899',
-};
-
 function detectExpression(text: string): Expression {
   const t = text.toLowerCase();
   let best: Expression = 'blank';
@@ -75,21 +58,17 @@ function detectExpression(text: string): Expression {
   return best;
 }
 
-interface Message {
-  id: number;
-  text: string;
-  expression: Expression;
-}
-
 function App() {
   const [text, setText] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
   const [sendToUnity, setSendToUnity] = useState<SendFn | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleReady = useCallback((send: SendFn) => {
     setSendToUnity(() => send);
+  }, []);
+
+  const handleRequestInput = useCallback((_placeholder: string) => {
+    inputRef.current?.focus();
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -110,10 +89,8 @@ function App() {
       console.log('[Chat] Unity 미연결 — payload:', payload);
     }
 
-    setMessages(prev => [...prev, { id: Date.now(), text: trimmed, expression }]);
     setText('');
     inputRef.current?.focus();
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   }, [text, sendToUnity]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -123,6 +100,14 @@ function App() {
     }
   }, [handleSubmit]);
 
+  const handleInputFocus = useCallback(() => {
+    (document.getElementById('unity-canvas') as HTMLCanvasElement | null)?.blur();
+  }, []);
+
+  const handleInputBlur = useCallback(() => {
+    (document.getElementById('unity-canvas') as HTMLCanvasElement | null)?.focus();
+  }, []);
+
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       <UnityCanvas
@@ -130,45 +115,9 @@ function App() {
         onLoaded={() => console.log('Unity ready')}
         onError={(e) => console.error('Unity error:', e)}
         onReady={handleReady}
+        onRequestInput={handleRequestInput}
       />
 
-      {/* 말풍선 목록 */}
-      <div style={{
-        position: 'fixed', bottom: 110, left: 0, right: 0,
-        maxHeight: '55vh', overflowY: 'auto',
-        padding: '0 16px 8px',
-        display: 'flex', flexDirection: 'column', gap: 8,
-        pointerEvents: 'none',
-      }}>
-        {messages.map(msg => (
-          <div key={msg.id} style={{
-            alignSelf: 'flex-end',
-            maxWidth: '78%',
-            background: 'rgba(30,24,50,0.92)',
-            border: `1.5px solid ${EXPRESSION_COLOR[msg.expression]}44`,
-            borderRadius: '18px 18px 4px 18px',
-            padding: '10px 14px',
-            display: 'flex', flexDirection: 'column', gap: 4,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16 }}>{EXPRESSION_EMOJI[msg.expression]}</span>
-              <span style={{
-                fontSize: 11, fontWeight: 600,
-                color: EXPRESSION_COLOR[msg.expression],
-                textTransform: 'uppercase', letterSpacing: 0.5,
-              }}>
-                {msg.expression}
-              </span>
-            </div>
-            <span style={{ fontSize: 14, color: '#ddd8f0', lineHeight: '20px', wordBreak: 'break-word' }}>
-              {msg.text}
-            </span>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* 채팅 입력 오버레이 */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         padding: '12px 16px 28px',
@@ -180,6 +129,8 @@ function App() {
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
           placeholder="지금 어떤 기분이에요? 다 털어놔요"
           maxLength={200}
           rows={1}

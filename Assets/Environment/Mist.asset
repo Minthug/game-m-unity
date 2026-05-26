@@ -19,5 +19,5 @@ MonoBehaviour:
   scale: 1.2
   scrollSpeedX: 0.15
   sortingOrder: 5
-  isUnlocked: 1
+  isUnlocked: 0
   price: 0
