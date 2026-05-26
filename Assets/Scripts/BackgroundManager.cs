@@ -51,6 +51,7 @@ public class BackgroundManager : MonoBehaviour
         targetBgColor = EmotionBgColor(e);
         foreach (var kv in psMap)
             kv.Value.SetActive(kv.Key == e);
+        RoomUIManager.Instance?.ApplyEmotion(e);
         Debug.Log($"[BG] 감정 전환 → {e}");
     }
 

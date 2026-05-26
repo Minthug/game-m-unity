@@ -18,7 +18,8 @@ public class RoomUIManager : MonoBehaviour
     [Header("프리팹")]
     public GameObject itemButtonPrefab;
 
-    bool shopOpen;
+    bool       shopOpen;
+    Expression currentEmotion = Expression.Blank;
 
     void Awake()
     {
@@ -115,6 +116,10 @@ public class RoomUIManager : MonoBehaviour
 
     void SetupItemButton(GameObject btn, RoomItem item)
     {
+        // 카드 배경색을 현재 감정 색상으로
+        var bg = btn.GetComponent<Image>();
+        if (bg != null) { bg.sprite = null; bg.color = CurrentCardColor(); }
+
         // 아이콘 (previewIcon 우선, 없으면 sprite, 둘 다 없으면 placeholder)
         var icon = btn.transform.Find("Icon")?.GetComponent<Image>();
         if (icon != null)
@@ -158,8 +163,60 @@ public class RoomUIManager : MonoBehaviour
 
     void OnItemClicked(RoomItem item)
     {
-        // 화면 중앙에 배치 후 상점 닫기
         RoomManager.Instance?.PlaceItem(item.itemId, Vector3.zero);
         CloseShop();
+    }
+
+    // ── 감정 연동 색상 ────────────────────────────────────────────
+
+    public void ApplyEmotion(Expression e)
+    {
+        currentEmotion = e;
+
+        var (panel, btn, btnClose, card) = EmotionUIColors(e);
+
+        if (shopPanel != null)
+        {
+            var img = shopPanel.GetComponent<Image>();
+            if (img != null) { img.sprite = null; img.color = panel; }
+        }
+        if (openShopBtn != null)
+        {
+            var img = openShopBtn.GetComponent<Image>();
+            if (img != null) { img.sprite = null; img.color = btn; }
+        }
+        if (closeShopBtn != null)
+        {
+            var img = closeShopBtn.GetComponent<Image>();
+            if (img != null) { img.sprite = null; img.color = btnClose; }
+        }
+
+        // 열려있는 상태라면 아이템 카드도 즉시 갱신
+        if (shopOpen) RefreshShop();
+    }
+
+    Color CurrentCardColor()
+    {
+        var (_, _, _, card) = EmotionUIColors(currentEmotion);
+        return card;
+    }
+
+    static (Color panel, Color btn, Color btnClose, Color card) EmotionUIColors(Expression e) => e switch
+    {
+        Expression.Angry     => (Hex("#200500", 0.97f), Hex("#3A0800"), Hex("#220400"), Hex("#2E0600")),
+        Expression.Sad       => (Hex("#001030", 0.97f), Hex("#001844"), Hex("#000D20"), Hex("#001438")),
+        Expression.Fear      => (Hex("#100020", 0.97f), Hex("#1A0038"), Hex("#0D0028"), Hex("#150030")),
+        Expression.Happy     => (Hex("#140C28", 0.97f), Hex("#1E1040"), Hex("#110830"), Hex("#1A1035")),
+        Expression.Disgust   => (Hex("#041208", 0.97f), Hex("#061A0A"), Hex("#030C05"), Hex("#051408")),
+        Expression.Surprised => (Hex("#0E0030", 0.97f), Hex("#160048"), Hex("#0A001C"), Hex("#120038")),
+        Expression.Contempt  => (Hex("#0A0E18", 0.97f), Hex("#121828"), Hex("#080C14"), Hex("#0E1420")),
+        _                    => (Hex("#0F0F18", 0.97f), Hex("#181820"), Hex("#101018"), Hex("#141420")),
+    };
+
+    static Color Hex(string hex, float a = 1f)
+    {
+        ColorUtility.TryParseHtmlString(hex, out var c);
+        c.a = a;
+        return c;
     }
 }
