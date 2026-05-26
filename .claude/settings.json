@@ -1,12 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git add*)",
-      "Bash(git commit*)",
-      "Bash(git push*)",
-      "Bash(git log*)"
+      "PowerShell(cd C:\\projects\\game-m-unity; git status*)",
+      "PowerShell(cd C:\\projects\\game-m-unity; git diff*)",
+      "PowerShell(cd C:\\projects\\game-m-unity; git add*)",
+      "PowerShell(cd C:\\projects\\game-m-unity; git commit*)",
+      "PowerShell(cd C:\\projects\\game-m-unity; git push*)",
+      "PowerShell(cd C:\\projects\\game-m-unity; git log*)"
     ]
   }
 }
