@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
+type SendFn = (obj: string, method: string, param: string) => void;
+
 interface Props {
   basePath?: string;
   loaderFile?: string;
@@ -7,6 +9,7 @@ interface Props {
   onProgress?: (p: number) => void;
   onLoaded?: () => void;
   onError?: (e: Error) => void;
+  onReady?: (send: SendFn) => void;
 }
 
 export default function UnityCanvas({
@@ -16,6 +19,7 @@ export default function UnityCanvas({
   onProgress,
   onLoaded,
   onError,
+  onReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const unityInstanceRef = useRef<any>(null);
@@ -61,13 +65,18 @@ export default function UnityCanvas({
           unityInstanceRef.current = instance;
           setLoaded(true);
           onLoaded?.();
+          onReady?.((obj, method, param) => instance.SendMessage(obj, method, param));
         })
         .catch((e: any) => {
+          if (mounted) setLoaded(true); // 로딩 화면 제거
           onError?.(e instanceof Error ? e : new Error(String(e)));
         });
     };
 
-    script.onerror = () => onError?.(new Error('Failed to load Unity loader'));
+    script.onerror = () => {
+      if (mounted) setLoaded(true); // 로딩 화면 제거 (파일 없어도 UI 테스트 가능)
+      onError?.(new Error('Failed to load Unity loader'));
+    };
     document.body.appendChild(script);
 
     return () => {
