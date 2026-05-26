@@ -35,7 +35,16 @@ public class RoomUIManager : MonoBehaviour
 
         RefreshShop();      // 버튼 먼저 생성
         ApplyKoreanFont();  // 생성된 버튼 포함 전체 폰트 적용
-        SetShopVisible(false);
+
+        // 애니메이션 없이 즉시 숨김 — AnimatePanel 사용 시 0.2s flash 발생
+        if (shopPanel != null)
+        {
+            var rect = shopPanel.GetComponent<RectTransform>();
+            float h = rect.sizeDelta.y > 0 ? rect.sizeDelta.y : 420f;
+            rect.anchoredPosition = new Vector2(0f, -h);
+            shopPanel.SetActive(false);
+        }
+        shopOpen = false;
     }
 
     void ApplyKoreanFont()
@@ -64,7 +73,10 @@ public class RoomUIManager : MonoBehaviour
     {
         shopOpen = visible;
         if (shopPanel != null)
+        {
+            StopAllCoroutines();
             StartCoroutine(AnimatePanel(visible));
+        }
     }
 
     IEnumerator AnimatePanel(bool visible)
@@ -163,7 +175,14 @@ public class RoomUIManager : MonoBehaviour
 
     void OnItemClicked(RoomItem item)
     {
-        RoomManager.Instance?.PlaceItem(item.itemId, Vector3.zero);
+        var cam = Camera.main;
+        float hw = cam != null ? cam.orthographicSize * cam.aspect * 0.5f : 2f;
+        float hh = cam != null ? cam.orthographicSize * 0.5f : 2f;
+        var pos = new Vector3(
+            UnityEngine.Random.Range(-hw, hw),
+            UnityEngine.Random.Range(-hh, hh),
+            0f);
+        RoomManager.Instance?.PlaceItem(item.itemId, pos);
         CloseShop();
     }
 

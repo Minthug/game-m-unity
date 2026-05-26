@@ -54,6 +54,10 @@ public class RoomItemObject : MonoBehaviour
 
         if (mouse.leftButton.wasPressedThisFrame && pressedItem == null)
         {
+            // UI 위에서 클릭 시 드래그 무시 (상점 버튼/패널 클릭이 아이템으로 전파되지 않도록)
+            var es = UnityEngine.EventSystems.EventSystem.current;
+            if (es != null && es.IsPointerOverGameObject()) return;
+
             var hit = Physics2D.OverlapPoint(mouseWorld);
             if (hit != null && hit.gameObject == gameObject)
             {
