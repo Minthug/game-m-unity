@@ -7,6 +7,7 @@ public class BackgroundManager : MonoBehaviour
 
     Camera mainCam;
     Color  targetBgColor;
+    Color? themeColorOverride;
 
     Expression currentEmotion = Expression.Blank;
     float      checkTimer     = 0f;
@@ -30,9 +31,12 @@ public class BackgroundManager : MonoBehaviour
 
     void Update()
     {
-        // 배경색 부드럽게 전환
+        // 배경색 부드럽게 전환 (테마 오버라이드 우선)
         if (mainCam != null)
-            mainCam.backgroundColor = Color.Lerp(mainCam.backgroundColor, targetBgColor, Time.deltaTime * 1.0f);
+        {
+            var target = themeColorOverride ?? targetBgColor;
+            mainCam.backgroundColor = Color.Lerp(mainCam.backgroundColor, target, Time.deltaTime * 1.0f);
+        }
 
         // 지배적 감정 주기 체크
         checkTimer += Time.deltaTime;
@@ -61,6 +65,9 @@ public class BackgroundManager : MonoBehaviour
 
         Debug.Log($"[BG] 감정 전환 → {e}");
     }
+
+    public void SetThemeColorOverride(Color c) => themeColorOverride = c;
+    public void ClearThemeColorOverride()       => themeColorOverride = null;
 
     // React 호환 (기존 SendMessage 유지)
     public void SetThemeFromWeb(string themeId) { }

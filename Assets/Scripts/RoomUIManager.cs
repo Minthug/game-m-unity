@@ -9,15 +9,27 @@ public class RoomUIManager : MonoBehaviour
     public static RoomUIManager Instance { get; private set; }
 
     [Header("UI 참조 (Setup Scene이 자동 생성)")]
-    public Canvas     rootCanvas;
-    public GameObject shopPanel;
+    public Canvas        rootCanvas;
+    public GameObject    shopPanel;
     public RectTransform itemGrid;
-    public Button     openShopBtn;
-    public Button     closeShopBtn;
+    public Button        openShopBtn;
+    public Button        closeShopBtn;
+
+    [Header("탭")]
+    public Button     tabDecorBtn;
+    public Button     tabBgBtn;
+    public GameObject scrollViewDecor;
+    public GameObject scrollViewBg;
+
+    [Header("배경 테마")]
+    public RectTransform bgItemGrid;
+    public GameObject    bgThemeButtonPrefab;
 
     [Header("프리팹")]
     public GameObject itemButtonPrefab;
 
+    enum ShopTab { Decor, BgTheme }
+    ShopTab    currentTab    = ShopTab.Decor;
     bool       shopOpen;
     Expression currentEmotion = Expression.Blank;
 
@@ -32,7 +44,10 @@ public class RoomUIManager : MonoBehaviour
         // SceneSetup의 AddListener는 씬에 저장 안 되므로 런타임에 연결
         if (openShopBtn  != null) openShopBtn.onClick.AddListener(OpenShop);
         if (closeShopBtn != null) closeShopBtn.onClick.AddListener(CloseShop);
+        if (tabDecorBtn  != null) tabDecorBtn.onClick.AddListener(() => SwitchTab(ShopTab.Decor));
+        if (tabBgBtn     != null) tabBgBtn.onClick.AddListener(() => SwitchTab(ShopTab.BgTheme));
 
+        UpdateTabColors();  // 초기 탭 색상 설정
         RefreshShop();      // 버튼 먼저 생성
         ApplyKoreanFont();  // 생성된 버튼 포함 전체 폰트 적용
 
@@ -47,22 +62,33 @@ public class RoomUIManager : MonoBehaviour
         shopOpen = false;
     }
 
+    TMPro.TMP_FontAsset _korFont;
+
+    TMPro.TMP_FontAsset KorFont =>
+        _korFont != null ? _korFont : (_korFont = Resources.Load<TMPro.TMP_FontAsset>("KoreanFont"));
+
     void ApplyKoreanFont()
     {
-        var font = Resources.Load<TMPro.TMP_FontAsset>("KoreanFont");
-        if (font == null) { Debug.LogWarning("[RoomUI] KoreanFont 없음 — Game-M/0. Setup Korean Font 먼저 실행"); return; }
-
-        // RoomUIManager는 Canvas의 자식 — Canvas 전체에서 검색해야 형제 오브젝트도 포함됨
+        if (KorFont == null) { Debug.LogWarning("[RoomUI] KoreanFont 없음 — Game-M/0. Setup Korean Font 먼저 실행"); return; }
         var root = rootCanvas != null ? rootCanvas.transform : transform.root;
         foreach (var tmp in root.GetComponentsInChildren<TMPro.TextMeshProUGUI>(true))
-            tmp.font = font;
+            tmp.font = KorFont;
+    }
+
+    // 한글 텍스트 설정 전에 개별 오브젝트에 폰트 적용
+    void ApplyKoreanFontTo(GameObject go)
+    {
+        if (KorFont == null) return;
+        foreach (var tmp in go.GetComponentsInChildren<TMPro.TextMeshProUGUI>(true))
+            tmp.font = KorFont;
     }
 
     // ── 상점 열기/닫기 ─────────────────────────────────────────────
 
     public void OpenShop()
     {
-        RefreshShop();       // 열 때마다 최신 카탈로그 반영
+        if (currentTab == ShopTab.Decor) RefreshShop();
+        else                             RefreshBgShop();
         ApplyKoreanFont();
         SetShopVisible(true);
     }
@@ -119,6 +145,7 @@ public class RoomUIManager : MonoBehaviour
         {
             if (item == null) continue;
             var btn = Instantiate(itemButtonPrefab, itemGrid);
+            ApplyKoreanFontTo(btn); // 한글 텍스트 설정 전에 폰트 먼저 적용
             SetupItemButton(btn, item);
         }
 
@@ -184,6 +211,134 @@ public class RoomUIManager : MonoBehaviour
             0f);
         RoomManager.Instance?.PlaceItem(item.itemId, pos);
         CloseShop();
+    }
+
+    // ── 탭 전환 ──────────────────────────────────────────────────
+
+    void SwitchTab(ShopTab tab)
+    {
+        currentTab = tab;
+        if (scrollViewDecor != null) scrollViewDecor.SetActive(tab == ShopTab.Decor);
+        if (scrollViewBg    != null) scrollViewBg.SetActive(tab == ShopTab.BgTheme);
+
+        UpdateTabColors();
+
+        if (tab == ShopTab.Decor) RefreshShop();
+        else                      RefreshBgShop();
+    }
+
+    void UpdateTabColors()
+    {
+        var active   = new Color(0.45f, 0.22f, 0.93f, 1f);
+        var inactive = new Color(0.20f, 0.20f, 0.26f, 1f);
+
+        SetBtnColor(tabDecorBtn, currentTab == ShopTab.Decor   ? active : inactive);
+        SetBtnColor(tabBgBtn,    currentTab == ShopTab.BgTheme ? active : inactive);
+    }
+
+    static void SetBtnColor(Button btn, Color c)
+    {
+        if (btn == null) return;
+        var img = btn.GetComponent<Image>();
+        if (img != null) img.color = c;
+    }
+
+    // ── 배경 테마 탭 ─────────────────────────────────────────────
+
+    public void RefreshBgShop()
+    {
+        if (bgItemGrid == null || bgThemeButtonPrefab == null) return;
+
+        // BackgroundThemeManager가 씬에 없으면 자동 생성
+        if (BackgroundThemeManager.Instance == null)
+            new GameObject("BackgroundThemeManager").AddComponent<BackgroundThemeManager>();
+
+        foreach (Transform child in bgItemGrid)
+            Destroy(child.gameObject);
+
+        var catalog = BackgroundThemeManager.Instance?.catalog;
+        if (catalog == null || catalog.Count == 0)
+        {
+            Debug.LogWarning("[RoomUI] 배경 테마 카탈로그 비어있음 — Assets/Resources/BackgroundThemes/ 확인 필요");
+            return;
+        }
+
+        foreach (var theme in catalog)
+        {
+            if (theme == null) continue;
+            var btn = Instantiate(bgThemeButtonPrefab, bgItemGrid);
+            ApplyKoreanFontTo(btn); // 한글 텍스트 설정 전에 폰트 먼저 적용
+            SetupBgThemeButton(btn, theme);
+        }
+
+        UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(bgItemGrid);
+        ApplyKoreanFont();
+    }
+
+    void SetupBgThemeButton(GameObject btn, BackgroundTheme theme)
+    {
+        bool isUnlocked = BackgroundThemeManager.Instance?.IsUnlocked(theme.themeId) ?? false;
+        bool isActive   = BackgroundThemeManager.Instance?.IsActive(theme.themeId) ?? false;
+
+        // 카드 배경 = 테마 색상 (프리뷰)
+        var bg = btn.GetComponent<Image>();
+        if (bg != null) { bg.sprite = null; bg.color = theme.bgColor; }
+
+        // 카드 루트 Button은 raycast만 막지 않도록 비활성화
+        var rootBtn = btn.GetComponent<Button>();
+        if (rootBtn != null) rootBtn.enabled = false;
+
+        // 이름
+        var label = btn.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
+        if (label != null) label.text = theme.displayName;
+
+        // 잠금 오버레이 — raycastTarget 끄기 (ActionBtn 클릭 가로채지 않도록)
+        var lockObj = btn.transform.Find("Lock");
+        if (lockObj != null)
+        {
+            lockObj.gameObject.SetActive(!isUnlocked);
+            foreach (var img in lockObj.GetComponentsInChildren<Image>(true))
+                img.raycastTarget = false;
+        }
+
+        // 액션 버튼
+        var actionBtn   = btn.transform.Find("ActionBtn")?.GetComponent<Button>();
+        var actionLabel = btn.transform.Find("ActionBtn/Text")?.GetComponent<TextMeshProUGUI>();
+
+        if (actionBtn == null)
+        {
+            Debug.LogWarning("[RoomUI] BgThemeButton에 'ActionBtn' 자식이 없음 — Recreate Room UI 필요");
+            return;
+        }
+        actionBtn.onClick.RemoveAllListeners();
+
+        if (isActive)
+        {
+            if (actionLabel != null) actionLabel.text = "✓ 사용 중";
+            actionBtn.interactable = false;
+        }
+        else if (isUnlocked)
+        {
+            if (actionLabel != null) actionLabel.text = theme.themeId == "default" ? "기본으로" : "적용";
+            actionBtn.interactable = true;
+            var captured = theme;
+            actionBtn.onClick.AddListener(() =>
+                BackgroundThemeManager.Instance?.ApplyTheme(captured.themeId));
+        }
+        else if (theme.isAdUnlock)
+        {
+            if (actionLabel != null) actionLabel.text = "광고 보기";
+            actionBtn.interactable = true;
+            var captured = theme;
+            actionBtn.onClick.AddListener(() => {
+                // AdManager가 없으면 자동 생성
+                if (AdManager.Instance == null)
+                    new GameObject("AdManager").AddComponent<AdManager>();
+                AdManager.Instance.ShowRewardedAd(success => {
+                    if (success) BackgroundThemeManager.Instance?.UnlockByAd(captured.themeId);
+                });
+            });
+        }
     }
 
     // ── 감정 연동 색상 ────────────────────────────────────────────

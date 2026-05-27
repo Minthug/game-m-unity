@@ -182,10 +182,24 @@ public static class SceneSetup
         var envMgr      = envGO.GetComponent<EnvironmentManager>() ?? envGO.AddComponent<EnvironmentManager>();
         SetupMistItem(envMgr);
 
+        // 6-1. BackgroundThemeManager 생성
+        var existingBgTheme = Object.FindFirstObjectByType<BackgroundThemeManager>();
+        var bgThemeGO = existingBgTheme != null ? existingBgTheme.gameObject : new GameObject("BackgroundThemeManager");
+        if (bgThemeGO.GetComponent<BackgroundThemeManager>() == null)
+            bgThemeGO.AddComponent<BackgroundThemeManager>();
+
+        // 6-2. AdManager 생성
+        var existingAd = Object.FindFirstObjectByType<AdManager>();
+        var adGO = existingAd != null ? existingAd.gameObject : new GameObject("AdManager");
+        if (adGO.GetComponent<AdManager>() == null)
+            adGO.AddComponent<AdManager>();
+
         // 7. HeartRoom 폴더 + RoomManager + UI 생성
         SetupHeartRoom();
         SetupRoomUI();
         RefreshRoomCatalog(); // 아이템 자동 등록
+        SetupDefaultBgThemes();
+        RefreshBgThemeCatalog();
 
         // 7. 카메라 설정
         if (Camera.main != null)
@@ -442,7 +456,7 @@ public static class SceneSetup
         panelRect.anchorMin = new Vector2(0f, 0f);
         panelRect.anchorMax = new Vector2(1f, 0f);
         panelRect.pivot     = new Vector2(0.5f, 0f);
-        panelRect.sizeDelta        = new Vector2(0f, 420f);
+        panelRect.sizeDelta        = new Vector2(0f, 480f); // 탭바 추가로 60px 증가
         panelRect.anchoredPosition = new Vector2(0f, 0f);
 
         // 닫기 버튼
@@ -453,17 +467,36 @@ public static class SceneSetup
         closeRect.anchoredPosition = new Vector2(-16f, -12f);
         closeRect.sizeDelta        = new Vector2(100f, 40f);
 
-        // 스크롤뷰
-        var scrollGO   = new GameObject("ScrollView");
+        // ── 탭 바 ─────────────────────────────────────────────────
+        var tabBarGO = new GameObject("TabBar");
+        tabBarGO.transform.SetParent(panelGO.transform, false);
+        var tabBarRt = tabBarGO.AddComponent<RectTransform>();
+        tabBarRt.anchorMin        = new Vector2(0f, 1f);
+        tabBarRt.anchorMax        = new Vector2(1f, 1f);
+        tabBarRt.pivot            = new Vector2(0.5f, 1f);
+        tabBarRt.anchoredPosition = new Vector2(0f, -56f);
+        tabBarRt.sizeDelta        = new Vector2(-32f, 44f);
+        var tabHLG = tabBarGO.AddComponent<HorizontalLayoutGroup>();
+        tabHLG.spacing              = 8f;
+        tabHLG.childForceExpandWidth  = true;
+        tabHLG.childForceExpandHeight = true;
+        tabHLG.padding = new RectOffset(0, 0, 0, 0);
+
+        var tabDecorGO  = MakeButton(tabBarGO.transform, "Tab_Decor",   "방 꾸미기");
+        var tabBgGO     = MakeButton(tabBarGO.transform, "Tab_BgTheme", "배경 테마");
+        // 비활성 탭은 어두운 색으로
+        tabBgGO.GetComponent<Image>().color = new Color(0.20f, 0.20f, 0.26f, 1f);
+
+        // ── 스크롤뷰 (방 꾸미기) ─────────────────────────────────
+        var scrollGO   = new GameObject("ScrollView_Decor");
         scrollGO.transform.SetParent(panelGO.transform, false);
         var scrollRect2 = scrollGO.AddComponent<ScrollRect>();
         var scrollRt   = scrollGO.GetComponent<RectTransform>();
-        scrollRt.anchorMin        = new Vector2(0f, 0f);
-        scrollRt.anchorMax        = new Vector2(1f, 1f);
-        scrollRt.offsetMin        = new Vector2(16f, 16f);
-        scrollRt.offsetMax        = new Vector2(-16f, -60f);
+        scrollRt.anchorMin = new Vector2(0f, 0f);
+        scrollRt.anchorMax = new Vector2(1f, 1f);
+        scrollRt.offsetMin = new Vector2(16f, 16f);
+        scrollRt.offsetMax = new Vector2(-16f, -108f); // 닫기(52) + 탭바(44) + 여백(12)
 
-        // Viewport — RectMask2D (URP에서 Mask보다 안정적)
         var vpGO  = new GameObject("Viewport");
         vpGO.transform.SetParent(scrollGO.transform, false);
         vpGO.AddComponent<RectMask2D>();
@@ -471,26 +504,61 @@ public static class SceneSetup
         vpRt.anchorMin = Vector2.zero; vpRt.anchorMax = Vector2.one;
         vpRt.offsetMin = vpRt.offsetMax = Vector2.zero;
 
-        // Content (아이템 Grid)
         var contentGO  = new GameObject("Content");
         contentGO.transform.SetParent(vpGO.transform, false);
         var contentRt  = contentGO.AddComponent<RectTransform>();
-        contentRt.anchorMin        = new Vector2(0f, 1f);
-        contentRt.anchorMax        = new Vector2(1f, 1f);
-        contentRt.pivot            = new Vector2(0.5f, 1f);
-        contentRt.sizeDelta        = new Vector2(0f, 300f);
+        contentRt.anchorMin = new Vector2(0f, 1f);
+        contentRt.anchorMax = new Vector2(1f, 1f);
+        contentRt.pivot     = new Vector2(0.5f, 1f);
+        contentRt.sizeDelta = new Vector2(0f, 300f);
 
         var grid = contentGO.AddComponent<GridLayoutGroup>();
-        grid.cellSize    = new Vector2(160f, 180f);
-        grid.spacing     = new Vector2(12f, 12f);
-        grid.padding     = new RectOffset(12, 12, 12, 12);
-        grid.constraint  = GridLayoutGroup.Constraint.Flexible;
-
+        grid.cellSize   = new Vector2(160f, 180f);
+        grid.spacing    = new Vector2(12f, 12f);
+        grid.padding    = new RectOffset(12, 12, 12, 12);
+        grid.constraint = GridLayoutGroup.Constraint.Flexible;
         contentGO.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         scrollRect2.content    = contentRt;
         scrollRect2.viewport   = vpRt;
         scrollRect2.horizontal = false;
+
+        // ── 스크롤뷰 (배경 테마) ─────────────────────────────────
+        var bgScrollGO  = new GameObject("ScrollView_BgTheme");
+        bgScrollGO.transform.SetParent(panelGO.transform, false);
+        var bgScrollRect = bgScrollGO.AddComponent<ScrollRect>();
+        var bgScrollRt   = bgScrollGO.GetComponent<RectTransform>();
+        bgScrollRt.anchorMin = new Vector2(0f, 0f);
+        bgScrollRt.anchorMax = new Vector2(1f, 1f);
+        bgScrollRt.offsetMin = new Vector2(16f, 16f);
+        bgScrollRt.offsetMax = new Vector2(-16f, -108f);
+
+        var bgVpGO = new GameObject("Viewport");
+        bgVpGO.transform.SetParent(bgScrollGO.transform, false);
+        bgVpGO.AddComponent<RectMask2D>();
+        var bgVpRt = bgVpGO.GetComponent<RectTransform>();
+        bgVpRt.anchorMin = Vector2.zero; bgVpRt.anchorMax = Vector2.one;
+        bgVpRt.offsetMin = bgVpRt.offsetMax = Vector2.zero;
+
+        var bgContentGO = new GameObject("Content");
+        bgContentGO.transform.SetParent(bgVpGO.transform, false);
+        var bgContentRt = bgContentGO.AddComponent<RectTransform>();
+        bgContentRt.anchorMin = new Vector2(0f, 1f);
+        bgContentRt.anchorMax = new Vector2(1f, 1f);
+        bgContentRt.pivot     = new Vector2(0.5f, 1f);
+        bgContentRt.sizeDelta = new Vector2(0f, 300f);
+
+        var bgGrid = bgContentGO.AddComponent<GridLayoutGroup>();
+        bgGrid.cellSize   = new Vector2(160f, 180f);
+        bgGrid.spacing    = new Vector2(12f, 12f);
+        bgGrid.padding    = new RectOffset(12, 12, 12, 12);
+        bgGrid.constraint = GridLayoutGroup.Constraint.Flexible;
+        bgContentGO.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        bgScrollRect.content    = bgContentRt;
+        bgScrollRect.viewport   = bgVpRt;
+        bgScrollRect.horizontal = false;
+        bgScrollGO.SetActive(false); // 기본적으로 숨김
 
         // ── 아이템 버튼 프리팹 ────────────────────────────────────
         const string itemBtnPath = "Assets/HeartRoom/Prefabs/ItemButton.prefab";
@@ -545,15 +613,73 @@ public static class SceneSetup
             Object.DestroyImmediate(ibGO);
         }
 
+        // ── 배경 테마 버튼 프리팹 ─────────────────────────────────
+        System.IO.Directory.CreateDirectory("Assets/Backgrounds/Prefabs");
+        AssetDatabase.Refresh();
+        const string bgBtnPath = "Assets/Backgrounds/Prefabs/BgThemeButton.prefab";
+        if (!System.IO.File.Exists(bgBtnPath))
+        {
+            var bgBtnGO  = new GameObject("BgThemeButton");
+            var bgBtnImg = bgBtnGO.AddComponent<Image>(); // 카드 전체가 테마 색상 프리뷰
+            bgBtnImg.color = new Color(0.10f, 0.10f, 0.14f, 1f);
+            bgBtnGO.AddComponent<Button>();
+            bgBtnGO.GetComponent<RectTransform>().sizeDelta = new Vector2(160f, 180f);
+
+            // 이름 (상단)
+            var bgLabelGO = MakeTMP(bgBtnGO.transform, "Label", "테마", 13f);
+            var bgLabelRt = bgLabelGO.GetComponent<RectTransform>();
+            bgLabelRt.anchorMin = new Vector2(0f, 0.65f);
+            bgLabelRt.anchorMax = new Vector2(1f, 0.90f);
+            bgLabelRt.offsetMin = bgLabelRt.offsetMax = Vector2.zero;
+
+            // 액션 버튼 (하단)
+            var actionGO  = new GameObject("ActionBtn");
+            actionGO.transform.SetParent(bgBtnGO.transform, false);
+            var actionImg = actionGO.AddComponent<Image>();
+            actionImg.color = new Color(0.45f, 0.22f, 0.93f, 0.9f);
+            actionGO.AddComponent<Button>();
+            var actionRt  = actionGO.GetComponent<RectTransform>();
+            actionRt.anchorMin = new Vector2(0.08f, 0.04f);
+            actionRt.anchorMax = new Vector2(0.92f, 0.32f);
+            actionRt.offsetMin = actionRt.offsetMax = Vector2.zero;
+
+            var actionTxtGO = MakeTMP(actionGO.transform, "Text", "광고 보기", 11f);
+            var actionTxtRt = actionTxtGO.GetComponent<RectTransform>();
+            actionTxtRt.anchorMin = Vector2.zero; actionTxtRt.anchorMax = Vector2.one;
+            actionTxtRt.offsetMin = actionTxtRt.offsetMax = Vector2.zero;
+
+            // 잠금 오버레이
+            var bgLockGO  = new GameObject("Lock");
+            bgLockGO.transform.SetParent(bgBtnGO.transform, false);
+            var bgLockImg = bgLockGO.AddComponent<Image>();
+            bgLockImg.color = new Color(0f, 0f, 0f, 0.5f);
+            var bgLockRt  = bgLockGO.GetComponent<RectTransform>();
+            bgLockRt.anchorMin = Vector2.zero; bgLockRt.anchorMax = Vector2.one;
+            bgLockRt.offsetMin = bgLockRt.offsetMax = Vector2.zero;
+            var bgLockIcon = MakeTMP(bgLockGO.transform, "LockIcon", "🔒", 20f);
+            var bliRt = bgLockIcon.GetComponent<RectTransform>();
+            bliRt.anchorMin = new Vector2(0f, 0.35f); bliRt.anchorMax = new Vector2(1f, 0.65f);
+            bliRt.offsetMin = bliRt.offsetMax = Vector2.zero;
+
+            PrefabUtility.SaveAsPrefabAsset(bgBtnGO, bgBtnPath);
+            Object.DestroyImmediate(bgBtnGO);
+        }
+
         // ── RoomUIManager 연결 ────────────────────────────────────
         var uiMgrGO = new GameObject("RoomUIManager");
         uiMgrGO.transform.SetParent(canvasGO.transform, false);
         var uiMgr = uiMgrGO.AddComponent<RoomUIManager>();
 
-        uiMgr.rootCanvas      = canvas;
-        uiMgr.shopPanel       = panelGO;
-        uiMgr.itemGrid        = contentRt;
-        uiMgr.itemButtonPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(itemBtnPath);
+        uiMgr.rootCanvas         = canvas;
+        uiMgr.shopPanel          = panelGO;
+        uiMgr.itemGrid           = contentRt;
+        uiMgr.itemButtonPrefab   = AssetDatabase.LoadAssetAtPath<GameObject>(itemBtnPath);
+        uiMgr.tabDecorBtn        = tabDecorGO.GetComponent<Button>();
+        uiMgr.tabBgBtn           = tabBgGO.GetComponent<Button>();
+        uiMgr.scrollViewDecor    = scrollGO;
+        uiMgr.scrollViewBg       = bgScrollGO;
+        uiMgr.bgItemGrid         = bgContentRt;
+        uiMgr.bgThemeButtonPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(bgBtnPath);
 
         var openBtn  = openBtnGO.GetComponent<Button>();
         var closeBtn = closeBtnGO.GetComponent<Button>();
@@ -562,7 +688,7 @@ public static class SceneSetup
         // onClick은 RoomUIManager.Start()에서 런타임에 연결
 
         EditorUtility.SetDirty(uiMgrGO);
-        Debug.Log("[Game-M] RoomUI 생성 완료");
+        Debug.Log("[Game-M] RoomUI 생성 완료 (탭 포함)");
     }
 
     static GameObject MakeButton(Transform parent, string name, string label)
@@ -591,6 +717,96 @@ public static class SceneSetup
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color     = Color.white;
         return go;
+    }
+
+    // ── 배경 테마 기본 에셋 생성 ─────────────────────────────────
+    static void SetupDefaultBgThemes()
+    {
+        // Resources 폴더에 저장 → 런타임 자동 로드 가능
+        const string dir = "Assets/Resources/BackgroundThemes";
+        System.IO.Directory.CreateDirectory(dir);
+        AssetDatabase.Refresh();
+
+        CreateBgTheme(dir, "default",     "기본 배경",   "#0A0A0F", adUnlock: false, defaultUnlocked: true);
+        CreateBgTheme(dir, "dawn_purple", "새벽 보라",   "#200A40", adUnlock: true,  defaultUnlocked: false);
+        CreateBgTheme(dir, "deep_sea",    "심해",        "#001838", adUnlock: true,  defaultUnlocked: false);
+        CreateBgTheme(dir, "sunset",      "석양 노을",   "#380A00", adUnlock: true,  defaultUnlocked: false);
+        CreateBgTheme(dir, "forest",      "달빛 숲",     "#041E08", adUnlock: true,  defaultUnlocked: false);
+        CreateBgTheme(dir, "rose_night",  "장미빛 밤",   "#280018", adUnlock: true,  defaultUnlocked: false);
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("[Game-M] 기본 배경 테마 에셋 생성 완료 (Assets/Resources/BackgroundThemes/)");
+    }
+
+    static void CreateBgTheme(string dir, string id, string name, string hex,
+                               bool adUnlock, bool defaultUnlocked)
+    {
+        var path = $"{dir}/{id}.asset";
+        ColorUtility.TryParseHtmlString(hex, out var color);
+
+        // 이미 있으면 색상/이름만 업데이트, 없으면 새로 생성
+        var t = AssetDatabase.LoadAssetAtPath<BackgroundTheme>(path);
+        if (t == null)
+        {
+            t = ScriptableObject.CreateInstance<BackgroundTheme>();
+            AssetDatabase.CreateAsset(t, path);
+        }
+
+        t.themeId         = id;
+        t.displayName     = name;
+        t.bgColor         = color;
+        t.isAdUnlock      = adUnlock;
+        t.defaultUnlocked = defaultUnlocked;
+        EditorUtility.SetDirty(t);
+    }
+
+    [MenuItem("Game-M/Refresh Background Theme Catalog")]
+    static void RefreshBgThemeCatalog()
+    {
+        if (EditorApplication.isPlaying) { Debug.LogError("[Game-M] 플레이 중에는 실행 불가"); return; }
+
+        var mgr = Object.FindFirstObjectByType<BackgroundThemeManager>();
+        if (mgr == null) { Debug.LogError("[Game-M] BackgroundThemeManager 없음 — Setup Scene 먼저 실행"); return; }
+
+        const string dir = "Assets/Resources/BackgroundThemes";
+        if (!System.IO.Directory.Exists(dir))
+        {
+            Debug.LogWarning($"[Game-M] {dir} 폴더 없음 — Setup Scene 실행 후 다시 시도");
+            return;
+        }
+
+        mgr.catalog.Clear();
+        LoadAssetsFromFolder(dir, path => {
+            var theme = AssetDatabase.LoadAssetAtPath<BackgroundTheme>(path);
+            if (theme != null) mgr.catalog.Add(theme);
+        });
+
+        // "default" 테마를 맨 앞으로 정렬
+        mgr.catalog.Sort((a, b) => {
+            if (a.themeId == "default") return -1;
+            if (b.themeId == "default") return 1;
+            return string.Compare(a.themeId, b.themeId, System.StringComparison.Ordinal);
+        });
+
+        EditorUtility.SetDirty(mgr);
+        AssetDatabase.SaveAssets();
+
+        var scene = EditorSceneManager.GetActiveScene();
+        EditorSceneManager.MarkSceneDirty(scene);
+        if (!string.IsNullOrEmpty(scene.path))
+            EditorSceneManager.SaveScene(scene);
+
+        Debug.Log($"[Game-M] 배경 테마 카탈로그 갱신 완료 — {mgr.catalog.Count}개");
+    }
+
+    [MenuItem("Game-M/Reset Background Theme Saves")]
+    static void ResetBgThemeSaves()
+    {
+        PlayerPrefs.DeleteKey("bg_unlocked_v1");
+        PlayerPrefs.DeleteKey("bg_active");
+        PlayerPrefs.Save();
+        Debug.Log("[Game-M] 배경 테마 저장 데이터 초기화 완료");
     }
 
     static void LoadAssetsFromFolder(string folder, System.Action<string> onLoad)
