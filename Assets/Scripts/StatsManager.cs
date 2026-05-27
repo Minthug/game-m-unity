@@ -1,15 +1,19 @@
+using System;
 using UnityEngine;
 
 public class StatsManager : MonoBehaviour
 {
     public static StatsManager Instance { get; private set; }
 
-    const string PREF_TOTAL    = "stats_total";
-    const string PREF_TODAY    = "stats_today";
-    const string PREF_TODAY_DT = "stats_today_date";
+    const string PREF_TOTAL     = "stats_total";
+    const string PREF_TODAY     = "stats_today";
+    const string PREF_TODAY_DT  = "stats_today_date";
+    const string PREF_STREAK    = "stats_streak";
+    const string PREF_LAST_DATE = "stats_last_date";
 
     public int TotalCount { get; private set; }
     public int TodayCount { get; private set; }
+    public int Streak     { get; private set; }
 
     void Awake()
     {
@@ -21,8 +25,19 @@ public class StatsManager : MonoBehaviour
     void Load()
     {
         TotalCount = PlayerPrefs.GetInt(PREF_TOTAL, 0);
+        Streak     = PlayerPrefs.GetInt(PREF_STREAK, 0);
 
-        string today = System.DateTime.Now.ToString("yyyy-MM-dd");
+        string today     = DateTime.Now.ToString("yyyy-MM-dd");
+        string yesterday = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+        string lastDate  = PlayerPrefs.GetString(PREF_LAST_DATE, "");
+
+        // 어제 이전에 마지막으로 플레이 → 연속 기록 깨짐
+        if (!string.IsNullOrEmpty(lastDate) && lastDate != today && lastDate != yesterday)
+        {
+            Streak = 0;
+            PlayerPrefs.SetInt(PREF_STREAK, 0);
+        }
+
         if (PlayerPrefs.GetString(PREF_TODAY_DT, "") != today)
         {
             PlayerPrefs.SetInt(PREF_TODAY, 0);
@@ -37,6 +52,7 @@ public class StatsManager : MonoBehaviour
 
     public void RecordSlime(Expression expression)
     {
+        bool firstOfDay = (TodayCount == 0);
         TotalCount++;
         TodayCount++;
         PlayerPrefs.SetInt(PREF_TOTAL, TotalCount);
@@ -44,7 +60,27 @@ public class StatsManager : MonoBehaviour
 
         var key = $"stats_expr_{expression.ToString().ToLower()}";
         PlayerPrefs.SetInt(key, PlayerPrefs.GetInt(key, 0) + 1);
+
+        int newStreak = firstOfDay ? UpdateStreak() : 0;
         PlayerPrefs.Save();
+
+        MilestoneManager.Instance?.CheckMilestones(expression, TotalCount, newStreak);
+    }
+
+    int UpdateStreak()
+    {
+        string today     = DateTime.Now.ToString("yyyy-MM-dd");
+        string yesterday = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+        string lastDate  = PlayerPrefs.GetString(PREF_LAST_DATE, "");
+
+        if (lastDate == yesterday)
+            Streak++;
+        else if (lastDate != today)
+            Streak = 1;
+
+        PlayerPrefs.SetString(PREF_LAST_DATE, today);
+        PlayerPrefs.SetInt(PREF_STREAK, Streak);
+        return Streak;
     }
 
     public int GetExpressionCount(Expression expression) =>
@@ -55,7 +91,9 @@ public class StatsManager : MonoBehaviour
         PlayerPrefs.DeleteKey(PREF_TOTAL);
         PlayerPrefs.DeleteKey(PREF_TODAY);
         PlayerPrefs.DeleteKey(PREF_TODAY_DT);
-        foreach (Expression e in System.Enum.GetValues(typeof(Expression)))
+        PlayerPrefs.DeleteKey(PREF_STREAK);
+        PlayerPrefs.DeleteKey(PREF_LAST_DATE);
+        foreach (Expression e in Enum.GetValues(typeof(Expression)))
             PlayerPrefs.DeleteKey($"stats_expr_{e.ToString().ToLower()}");
         PlayerPrefs.Save();
         Load();

@@ -17,9 +17,11 @@ public class SideMenuManager : MonoBehaviour
     Slider sfxSlider;
 
     // 통계
-    TextMeshProUGUI totalLabel;
-    TextMeshProUGUI todayLabel;
-    TextMeshProUGUI[] exprLabels; // 감정별
+    TextMeshProUGUI   totalLabel;
+    TextMeshProUGUI   todayLabel;
+    TextMeshProUGUI   streakLabel;
+    TextMeshProUGUI[] exprLabels;
+    Image[]           exprDots;
 
     // 탭
     GameObject     settingsContent;
@@ -350,15 +352,16 @@ public class SideMenuManager : MonoBehaviour
 
         float y = -24f;
 
-        totalLabel = AddStatRow(statsContent.transform, "총 슬라임", "0마리", ref y);
-        todayLabel = AddStatRow(statsContent.transform, "오늘 생성", "0마리", ref y);
+        totalLabel  = AddStatRow(statsContent.transform, "총 생성",   "0마리", ref y);
+        todayLabel  = AddStatRow(statsContent.transform, "오늘 생성", "0마리", ref y);
+        streakLabel = AddStatRow(statsContent.transform, "연속 기록", "0일",   ref y);
 
         y -= 20f;
         AddDivider(statsContent.transform, y);
         y -= 28f;
 
-        // 감정별 헤더
-        var hdr = MakeTMP(statsContent.transform, "감정별 기록", 13f);
+        // 감정 도감 헤더
+        var hdr = MakeTMP(statsContent.transform, "감정 도감", 13f);
         hdr.color     = new Color(0.6f, 0.6f, 0.7f, 1f);
         hdr.alignment = TextAlignmentOptions.MidlineLeft;
         var hdrRt = hdr.rectTransform;
@@ -366,25 +369,27 @@ public class SideMenuManager : MonoBehaviour
         hdrRt.pivot     = new Vector2(0.5f, 1f);
         hdrRt.sizeDelta        = new Vector2(-40f, 28f);
         hdrRt.anchoredPosition = new Vector2(0f, y);
-        y -= 32f;
+        y -= 36f;
 
+        // 감정별 색상 (SlimeManager Palette 상단색 기준)
         var exprs = new[]
         {
-            (Expression.Angry,     "분노"),
-            (Expression.Sad,       "슬픔"),
-            (Expression.Happy,     "행복"),
-            (Expression.Surprised, "놀람"),
-            (Expression.Fear,      "공포"),
-            (Expression.Disgust,   "혐오"),
-            (Expression.Contempt,  "경멸"),
-            (Expression.Blank,     "무표정"),
+            (Expression.Angry,     "분노",   new Color(0.86f, 0.15f, 0.15f, 1f)),
+            (Expression.Sad,       "슬픔",   new Color(0.15f, 0.39f, 0.92f, 1f)),
+            (Expression.Happy,     "기쁨",   new Color(0.49f, 0.23f, 0.93f, 1f)),
+            (Expression.Surprised, "놀람",   new Color(0.58f, 0.20f, 0.92f, 1f)),
+            (Expression.Fear,      "두려움", new Color(0.31f, 0.27f, 0.90f, 1f)),
+            (Expression.Disgust,   "혐오",   new Color(0.09f, 0.64f, 0.29f, 1f)),
+            (Expression.Contempt,  "경멸",   new Color(0.39f, 0.46f, 0.55f, 1f)),
+            (Expression.Blank,     "무감정", new Color(0.42f, 0.45f, 0.50f, 1f)),
         };
 
         exprLabels = new TextMeshProUGUI[exprs.Length];
+        exprDots   = new Image[exprs.Length];
         for (int i = 0; i < exprs.Length; i++)
         {
-            var (expr, name) = exprs[i];
-            exprLabels[i] = AddExprRow(statsContent.transform, name, ref y);
+            var (_, name, color) = exprs[i];
+            (exprLabels[i], exprDots[i]) = AddExprRow(statsContent.transform, name, color, ref y);
         }
     }
 
@@ -394,9 +399,9 @@ public class SideMenuManager : MonoBehaviour
         var rt  = go.AddComponent<RectTransform>();
         rt.anchorMin = new Vector2(0f, 1f); rt.anchorMax = new Vector2(1f, 1f);
         rt.pivot     = new Vector2(0.5f, 1f);
-        rt.sizeDelta        = new Vector2(-40f, 56f);
+        rt.sizeDelta        = new Vector2(-40f, 52f);
         rt.anchoredPosition = new Vector2(0f, y);
-        y -= 64f;
+        y -= 58f;
 
         var bgImg = go.AddComponent<Image>();
         bgImg.color = new Color(1f, 1f, 1f, 0.04f);
@@ -419,32 +424,44 @@ public class SideMenuManager : MonoBehaviour
         return valLbl;
     }
 
-    TextMeshProUGUI AddExprRow(Transform parent, string exprName, ref float y)
+    (TextMeshProUGUI label, Image dot) AddExprRow(Transform parent, string exprName, Color dotColor, ref float y)
     {
         var go  = new GameObject($"Expr_{exprName}"); go.transform.SetParent(parent, false);
         var rt  = go.AddComponent<RectTransform>();
         rt.anchorMin = new Vector2(0f, 1f); rt.anchorMax = new Vector2(1f, 1f);
         rt.pivot     = new Vector2(0.5f, 1f);
-        rt.sizeDelta        = new Vector2(-40f, 36f);
+        rt.sizeDelta        = new Vector2(-40f, 38f);
         rt.anchoredPosition = new Vector2(0f, y);
-        y -= 40f;
+        y -= 42f;
+
+        // 색상 도트
+        var dotGO  = new GameObject("Dot"); dotGO.transform.SetParent(go.transform, false);
+        var dotImg = dotGO.AddComponent<Image>();
+        dotImg.color = dotColor;
+        var dotRt = dotGO.GetComponent<RectTransform>();
+        dotRt.anchorMin        = new Vector2(0f, 0.5f);
+        dotRt.anchorMax        = new Vector2(0f, 0.5f);
+        dotRt.pivot            = new Vector2(0f, 0.5f);
+        dotRt.sizeDelta        = new Vector2(10f, 10f);
+        dotRt.anchoredPosition = new Vector2(8f, 0f);
 
         var nameLbl = MakeTMP(go.transform, exprName, 13f);
-        nameLbl.color     = new Color(0.65f, 0.65f, 0.75f, 1f);
+        nameLbl.color     = new Color(0.75f, 0.75f, 0.82f, 1f);
         nameLbl.alignment = TextAlignmentOptions.MidlineLeft;
         nameLbl.rectTransform.anchorMin = new Vector2(0f, 0f);
-        nameLbl.rectTransform.anchorMax = new Vector2(0.5f, 1f);
-        nameLbl.rectTransform.offsetMin = new Vector2(8f, 0f);
+        nameLbl.rectTransform.anchorMax = new Vector2(0.55f, 1f);
+        nameLbl.rectTransform.offsetMin = new Vector2(26f, 0f);
         nameLbl.rectTransform.offsetMax = Vector2.zero;
 
-        var valLbl = MakeTMP(go.transform, "0", 15f);
+        var valLbl = MakeTMP(go.transform, "미발견", 13f);
+        valLbl.color      = new Color(0.4f, 0.4f, 0.45f, 1f);
         valLbl.fontStyle  = FontStyles.Bold;
         valLbl.alignment  = TextAlignmentOptions.MidlineRight;
-        valLbl.rectTransform.anchorMin = new Vector2(0.5f, 0f);
+        valLbl.rectTransform.anchorMin = new Vector2(0.55f, 0f);
         valLbl.rectTransform.anchorMax = new Vector2(1f, 1f);
         valLbl.rectTransform.offsetMin = Vector2.zero;
         valLbl.rectTransform.offsetMax = new Vector2(-8f, 0f);
-        return valLbl;
+        return (valLbl, dotImg);
     }
 
     // ── 탭 전환 ──────────────────────────────────────────────────
@@ -509,8 +526,9 @@ public class SideMenuManager : MonoBehaviour
         var stats = StatsManager.Instance;
         if (stats == null) return;
 
-        if (totalLabel != null) totalLabel.text = $"{stats.TotalCount}마리";
-        if (todayLabel != null) todayLabel.text  = $"{stats.TodayCount}마리";
+        if (totalLabel  != null) totalLabel.text  = $"{stats.TotalCount}마리";
+        if (todayLabel  != null) todayLabel.text  = $"{stats.TodayCount}마리";
+        if (streakLabel != null) streakLabel.text = stats.Streak > 0 ? $"{stats.Streak}일 🔥" : "0일";
 
         if (exprLabels == null) return;
         var exprs = new[]
@@ -519,8 +537,28 @@ public class SideMenuManager : MonoBehaviour
             Expression.Fear,  Expression.Disgust, Expression.Contempt, Expression.Blank,
         };
         for (int i = 0; i < exprs.Length && i < exprLabels.Length; i++)
+        {
+            int count = stats.GetExpressionCount(exprs[i]);
             if (exprLabels[i] != null)
-                exprLabels[i].text = stats.GetExpressionCount(exprs[i]).ToString();
+            {
+                if (count == 0)
+                {
+                    exprLabels[i].text  = "미발견";
+                    exprLabels[i].color = new Color(0.4f, 0.4f, 0.45f, 1f);
+                }
+                else
+                {
+                    exprLabels[i].text  = $"{count}번";
+                    exprLabels[i].color = Color.white;
+                }
+            }
+            // 미발견이면 도트 dim 처리
+            if (exprDots != null && i < exprDots.Length && exprDots[i] != null)
+            {
+                var c = exprDots[i].color;
+                exprDots[i].color = new Color(c.r, c.g, c.b, count == 0 ? 0.25f : 1f);
+            }
+        }
     }
 
     // ── 유틸 ────────────────────────────────────────────────────

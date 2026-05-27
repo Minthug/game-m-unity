@@ -212,6 +212,12 @@ public static class SceneSetup
         if (sideMenuGO.GetComponent<SideMenuManager>() == null)
             sideMenuGO.AddComponent<SideMenuManager>();
 
+        // 6-6. MilestoneManager 생성
+        var existingMilestone = Object.FindFirstObjectByType<MilestoneManager>();
+        var milestoneGO = existingMilestone != null ? existingMilestone.gameObject : new GameObject("MilestoneManager");
+        if (milestoneGO.GetComponent<MilestoneManager>() == null)
+            milestoneGO.AddComponent<MilestoneManager>();
+
         // 7. HeartRoom 폴더 + RoomManager + UI 생성
         SetupHeartRoom();
         SetupRoomUI();
