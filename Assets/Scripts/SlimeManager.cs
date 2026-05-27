@@ -95,6 +95,7 @@ public class SlimeManager : MonoBehaviour
             : ColorUtil.FromHex(req.color);
         int stage = (req.stage >= 1 && req.stage <= 3) ? req.stage : 1;
 
+        StatsManager.Instance?.RecordSlime(expression);
         SpawnSlime(req.id ?? $"slime-{System.DateTime.Now.Ticks}", req.text, expression, color, stage);
     }
 

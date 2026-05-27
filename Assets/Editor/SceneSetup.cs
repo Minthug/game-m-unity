@@ -194,6 +194,24 @@ public static class SceneSetup
         if (adGO.GetComponent<AdManager>() == null)
             adGO.AddComponent<AdManager>();
 
+        // 6-3. SettingsManager 생성
+        var existingSettings = Object.FindFirstObjectByType<SettingsManager>();
+        var settingsGO = existingSettings != null ? existingSettings.gameObject : new GameObject("SettingsManager");
+        if (settingsGO.GetComponent<SettingsManager>() == null)
+            settingsGO.AddComponent<SettingsManager>();
+
+        // 6-4. StatsManager 생성
+        var existingStats = Object.FindFirstObjectByType<StatsManager>();
+        var statsGO = existingStats != null ? existingStats.gameObject : new GameObject("StatsManager");
+        if (statsGO.GetComponent<StatsManager>() == null)
+            statsGO.AddComponent<StatsManager>();
+
+        // 6-5. SideMenuManager 생성
+        var existingSideMenu = Object.FindFirstObjectByType<SideMenuManager>();
+        var sideMenuGO = existingSideMenu != null ? existingSideMenu.gameObject : new GameObject("SideMenuManager");
+        if (sideMenuGO.GetComponent<SideMenuManager>() == null)
+            sideMenuGO.AddComponent<SideMenuManager>();
+
         // 7. HeartRoom 폴더 + RoomManager + UI 생성
         SetupHeartRoom();
         SetupRoomUI();
