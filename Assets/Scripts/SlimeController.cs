@@ -31,13 +31,12 @@ public class SlimeController : MonoBehaviour
     const float DRIFT     = 0.03f;
     const float COHESION  = 0.021f;
 
-    // 스케일 애니메이션
-    Vector3 targetScale;
-    const float SQUISH_SPEED = 8f;
-
-    // 호흡 애니메이션
+    // 스케일 시스템
+    // transform.localScale = originalSize * breath * squish (매 FixedUpdate 직접 계산)
     float _breathOffset;        // 슬라임마다 다른 위상
-    bool  _overrideAnim;        // SpawnAnimation / PopAnimation 이 제어 중일 때 true
+    float _squishX = 1f;        // 충돌/홀드 시 임시 squish 배율
+    float _squishY = 1f;
+    bool  _overrideAnim;        // SpawnAnimation / PopAnimation 이 직접 제어할 때
 
     // ── 초기화 ───────────────────────────────────────────────────
 
@@ -71,17 +70,16 @@ public class SlimeController : MonoBehaviour
         CreatedAt       = createdAt > 0 ? createdAt : ColorUtil.NowMs();
         sr.color        = Color.white;
         originalSize    = worldSize;
-        targetScale     = Vector3.one * worldSize;
         GetComponent<CircleCollider2D>().radius = 0.42f;
 
         mergeCooldown = true;
         Invoke(nameof(EnableMerge), 1.5f);
 
-        // 저장 불러오기(createdAt > 0)면 팝인 없이 바로 등장
+        // 저장 불러오기면 팝인 없이 바로 등장
         if (createdAt <= 0)
             StartCoroutine(SpawnAnimation());
         else
-            transform.localScale = targetScale;
+            transform.localScale = Vector3.one * originalSize;
 
         Debug.Log($"[Slime] Init | id={id} stage={Stage} scale={worldSize}");
     }
@@ -93,15 +91,13 @@ public class SlimeController : MonoBehaviour
     void OnDisable()  => Debug.LogWarning($"[Slime] {SlimeId} OnDisable");
     void OnDestroy()  => Debug.LogWarning($"[Slime] {SlimeId} OnDestroy");
 
-    // ── 생성 팝인 애니메이션 ─────────────────────────────────────
+    // ── 생성 팝인 ────────────────────────────────────────────────
 
     IEnumerator SpawnAnimation()
     {
         _overrideAnim = true;
         transform.localScale = Vector3.zero;
-        targetScale          = Vector3.zero;
 
-        // 키프레임: t → scale 배율
         float[] tKeys = { 0f,   0.35f, 0.55f, 0.75f, 1.0f };
         float[] sKeys = { 0f,   1.25f, 0.88f, 1.06f, 1.0f };
         float   dur   = 0.5f;
@@ -112,20 +108,28 @@ public class SlimeController : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / dur);
             float s = SampleCurve(t, tKeys, sKeys) * originalSize;
-            transform.localScale = targetScale = new Vector3(s, s, 1f);
+            transform.localScale = new Vector3(s, s, 1f);
             yield return null;
         }
 
-        transform.localScale = targetScale = Vector3.one * originalSize;
+        transform.localScale = Vector3.one * originalSize;
+        _squishX = _squishY = 1f;
         _overrideAnim = false;
     }
 
-    // ── 물리 ─────────────────────────────────────────────────────
+    // ── 물리 + 스케일 ────────────────────────────────────────────
 
     void FixedUpdate()
     {
-        if (isDragging || isMouseHeld) return;
+        if (!isDragging && !isMouseHeld)
+            UpdatePhysics();
 
+        if (!_overrideAnim)
+            ApplyScale();
+    }
+
+    void UpdatePhysics()
+    {
         Vector2 vel = rb.linearVelocity;
 
         vel += new Vector2(
@@ -161,8 +165,20 @@ public class SlimeController : MonoBehaviour
         rb.linearVelocity = vel;
 
         ClampToBounds(ref vel);
+    }
 
-        transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.fixedDeltaTime * SQUISH_SPEED);
+    void ApplyScale()
+    {
+        // 호흡: 매 FixedUpdate마다 직접 계산 → lerp 감쇠 없이 실제 진폭 그대로
+        float breath = Mathf.Sin(Time.time * 1.5f + _breathOffset) * 0.08f;
+        float sx = originalSize * (1f - breath * 0.5f) * _squishX;
+        float sy = originalSize * (1f + breath)         * _squishY;
+
+        // 충돌/홀드로 인한 squish는 1.0으로 천천히 복귀
+        _squishX = Mathf.Lerp(_squishX, 1f, Time.fixedDeltaTime * 12f);
+        _squishY = Mathf.Lerp(_squishY, 1f, Time.fixedDeltaTime * 12f);
+
+        transform.localScale = new Vector3(sx, sy, 1f);
     }
 
     void ClampToBounds(ref Vector2 vel)
@@ -184,13 +200,11 @@ public class SlimeController : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D col)
     {
-        // 충돌 스쿼시
         if (!_overrideAnim)
         {
-            targetScale = new Vector3(
-                originalSize * 1.15f,
-                originalSize * 0.87f, 1f);
-            Invoke(nameof(ResetScale), 0.14f);
+            // squish 배율 즉시 설정 → ApplyScale이 복귀시킴
+            _squishX = 1.22f;
+            _squishY = 0.84f;
         }
 
         if (Stage >= 3 || mergeCooldown) return;
@@ -202,29 +216,13 @@ public class SlimeController : MonoBehaviour
             SlimeManager.Instance?.TryMerge(SlimeId, other.SlimeId);
     }
 
-    void ResetScale() { /* 호흡 애니메이션이 Update에서 targetScale을 관리함 */ }
-
-    // ── 업데이트 (입력 + 호흡) ───────────────────────────────────
+    // ── 입력 ─────────────────────────────────────────────────────
 
     static SlimeController pressedSlime;
     CircleCollider2D col2d;
     void Start() => col2d = GetComponent<CircleCollider2D>();
 
-    void Update()
-    {
-        HandleInput();
-
-        // 호흡 애니메이션 — 외부 코루틴이 제어 중이거나 드래그/홀드 중일 때 건너뜀
-        if (!_overrideAnim && !isMouseHeld)
-        {
-            float breath = Mathf.Sin(Time.time * 1.3f + _breathOffset) * 0.034f;
-            targetScale = new Vector3(
-                originalSize * (1f - breath * 0.45f),   // 가로는 살짝 반대
-                originalSize * (1f + breath),             // 세로로 호흡
-                1f
-            );
-        }
-    }
+    void Update() => HandleInput();
 
     void HandleInput()
     {
@@ -233,7 +231,6 @@ public class SlimeController : MonoBehaviour
 
         Vector2 mouseWorld = GetMouseWorld();
 
-        // 버튼 누름
         if (mouse.leftButton.wasPressedThisFrame && pressedSlime == null)
         {
             var hit = Physics2D.OverlapPoint(mouseWorld);
@@ -251,7 +248,6 @@ public class SlimeController : MonoBehaviour
             }
         }
 
-        // 드래그 중
         if (isMouseHeld && mouse.leftButton.isPressed)
         {
             if (!isDragging && (mouseWorld - mouseDownPos).magnitude > 0.12f)
@@ -263,7 +259,6 @@ public class SlimeController : MonoBehaviour
                 transform.position = (Vector3)(mouseWorld + dragOffset);
         }
 
-        // 버튼 뗌
         if (isMouseHeld && mouse.leftButton.wasReleasedThisFrame)
         {
             if (holdRoutine != null) { StopCoroutine(holdRoutine); holdRoutine = null; }
@@ -272,29 +267,27 @@ public class SlimeController : MonoBehaviour
             isMouseHeld  = false;
             isDragging   = false;
             pressedSlime = null;
+            _squishX = _squishY = 1f;
 
             SlimeManager.Instance?.OnDragEnd(SlimeId);
 
             if (wasDragging)
-            {
                 rb.linearVelocity = (mouseWorld - (Vector2)transform.position) * 2f;
-            }
             else
             {
                 float elapsed = Time.time - mouseDownTime;
                 float moved   = (mouseWorld - mouseDownPos).magnitude;
-                bool  quickTap = elapsed < 0.25f && moved < 0.3f;
-                if (quickTap && Stage > 1)
+                if (elapsed < 0.25f && moved < 0.3f && Stage > 1)
                     SlimeManager.Instance?.SplitSlime(SlimeId);
             }
         }
     }
 
-    // ── 홀드 타이머 (경고 떨림 포함) ────────────────────────────
+    // ── 홀드 타이머 (경고 떨림) ─────────────────────────────────
 
     IEnumerator HoldTimer()
     {
-        float elapsed     = 0f;
+        float elapsed      = 0f;
         float holdDuration = 0.6f;
 
         while (elapsed < holdDuration)
@@ -302,17 +295,15 @@ public class SlimeController : MonoBehaviour
             if (!isMouseHeld || isDragging) yield break;
             elapsed += Time.deltaTime;
 
-            // 홀드 진행도에 따라 진동이 커짐
             float t      = elapsed / holdDuration;
-            float wobble = Mathf.Sin(elapsed * 30f) * t * 0.12f;
-            targetScale = new Vector3(
-                originalSize * (1f + wobble),
-                originalSize * (1f - wobble * 0.8f),
-                1f
-            );
+            float wobble = Mathf.Sin(elapsed * 30f) * t * 0.18f;
+            _squishX = 1f + wobble;
+            _squishY = 1f - wobble * 0.75f;
+
             yield return null;
         }
 
+        _squishX = _squishY = 1f;
         if (isMouseHeld && !isDragging)
             TriggerPop();
     }
@@ -335,7 +326,7 @@ public class SlimeController : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
         rb.simulated      = false;
 
-        // 1. 좌우 흔들기
+        // 좌우 흔들기
         Vector3 origin = transform.position;
         float[] oxList = { 0.18f, -0.18f, 0.14f, -0.14f, 0.10f, -0.10f, 0.06f, -0.06f, 0.03f, -0.03f, 0f };
         foreach (float ox in oxList)
@@ -345,7 +336,7 @@ public class SlimeController : MonoBehaviour
         }
         transform.position = origin;
 
-        // 2. 스케일 wobble (4회)
+        // 스케일 wobble
         for (int i = 0; i < 4; i++)
         {
             for (float t = 0f; t < 1f; t += Time.deltaTime / 0.04f)
@@ -364,7 +355,7 @@ public class SlimeController : MonoBehaviour
             }
         }
 
-        // 3. 납작하게 눌림
+        // 납작하게 눌림
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.18f)
         {
             transform.localScale = new Vector3(
@@ -373,10 +364,8 @@ public class SlimeController : MonoBehaviour
             yield return null;
         }
 
-        // 4. 파티클 폭발
         PopEffect.Spawn(transform.position, SlimeColor, sr.sprite, originalSize);
 
-        // 5. 줄어들며 소멸
         Vector3 flatScale = transform.localScale;
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.22f)
         {
@@ -406,7 +395,6 @@ public class SlimeController : MonoBehaviour
         return mainCam.ScreenToWorldPoint(wp);
     }
 
-    // 키프레임 보간 (SpawnAnimation용)
     static float SampleCurve(float t, float[] tKeys, float[] sKeys)
     {
         for (int i = 0; i < tKeys.Length - 1; i++)
