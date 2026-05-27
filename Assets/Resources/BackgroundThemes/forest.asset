@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BackgroundTheme
   themeId: forest
   displayName: "\uB2EC\uBE5B \uC232"
-  bgColor: {r: 0.015686275, g: 0.11764706, b: 0.03137255, a: 1}
+  bgColor: {r: 0.05490196, g: 0.2509804, b: 0.1254902, a: 1}
+  bgColorBottom: {r: 0, g: 0.039215688, b: 0.011764706, a: 1}
   bgSprite: {fileID: 0}
   isAdUnlock: 1
   defaultUnlocked: 0

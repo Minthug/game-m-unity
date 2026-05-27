@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BackgroundTheme
   themeId: rose_night
   displayName: "\uC7A5\uBBF8\uBE5B \uBC24"
-  bgColor: {r: 0.15686275, g: 0, b: 0.09411765, a: 1}
+  bgColor: {r: 0.41960785, g: 0.0627451, b: 0.2509804, a: 1}
+  bgColorBottom: {r: 0.0627451, g: 0, b: 0.03137255, a: 1}
   bgSprite: {fileID: 0}
   isAdUnlock: 1
   defaultUnlocked: 0

@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BackgroundTheme
   themeId: dawn_purple
   displayName: "\uC0C8\uBCBD \uBCF4\uB77C"
-  bgColor: {r: 0.1254902, g: 0.039215688, b: 0.2509804, a: 1}
+  bgColor: {r: 0.23921569, g: 0.0627451, b: 0.5019608, a: 1}
+  bgColorBottom: {r: 0.023529412, g: 0, b: 0.05882353, a: 1}
   bgSprite: {fileID: 0}
   isAdUnlock: 1
   defaultUnlocked: 0

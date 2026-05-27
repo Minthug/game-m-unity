@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BackgroundTheme
   themeId: deep_sea
   displayName: "\uC2EC\uD574"
-  bgColor: {r: 0, g: 0.09411765, b: 0.21960784, a: 1}
+  bgColor: {r: 0, g: 0.3137255, b: 0.5019608, a: 1}
+  bgColorBottom: {r: 0, g: 0.023529412, b: 0.08235294, a: 1}
   bgSprite: {fileID: 0}
   isAdUnlock: 1
   defaultUnlocked: 0

@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BackgroundTheme
   themeId: sunset
   displayName: "\uC11D\uC591 \uB178\uC744"
-  bgColor: {r: 0.21960784, g: 0.039215688, b: 0, a: 1}
+  bgColor: {r: 0.627451, g: 0.21960784, b: 0, a: 1}
+  bgColorBottom: {r: 0.11764706, g: 0, b: 0.15686275, a: 1}
   bgSprite: {fileID: 0}
   isAdUnlock: 1
   defaultUnlocked: 0

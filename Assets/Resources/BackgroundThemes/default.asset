@@ -15,6 +15,7 @@ MonoBehaviour:
   themeId: default
   displayName: "\uAE30\uBCF8 \uBC30\uACBD"
   bgColor: {r: 0.039215688, g: 0.039215688, b: 0.05882353, a: 1}
+  bgColorBottom: {r: 0.039215688, g: 0.039215688, b: 0.05882353, a: 1}
   bgSprite: {fileID: 0}
   isAdUnlock: 0
   defaultUnlocked: 1
