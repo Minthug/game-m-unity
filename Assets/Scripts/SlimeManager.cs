@@ -143,6 +143,7 @@ public class SlimeManager : MonoBehaviour
         }
         _suppressSave = false;
         SaveSlimes();
+        AudioManager.Instance?.PlaySplit();
         Debug.Log($"[SlimeManager] 분리: {id} → 2 × {childStage}단계");
     }
 
@@ -180,6 +181,7 @@ public class SlimeManager : MonoBehaviour
         SpawnSlime(newId, "", expr, color, nextStage, midPos);
         _suppressSave = false;
         SaveSlimes();
+        AudioManager.Instance?.PlayMerge();
         Debug.Log($"[SlimeManager] 합치기 완료 → {newId} stage={nextStage}");
     }
 
@@ -215,7 +217,11 @@ public class SlimeManager : MonoBehaviour
         ctrl.Init(id, text, expression, color, worldSize, stage, createdAt);
         slimes[id] = ctrl;
         go.name    = $"Slime_{id}";
-        if (!_suppressSave) SaveSlimes();
+        if (!_suppressSave)
+        {
+            SaveSlimes();
+            AudioManager.Instance?.PlaySpawn();
+        }
         Debug.Log($"[SlimeManager] 생성: {go.name} stage={stage} pos={pos} scale={worldSize}");
     }
 

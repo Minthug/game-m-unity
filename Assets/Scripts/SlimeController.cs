@@ -248,6 +248,7 @@ public class SlimeController : MonoBehaviour
         isMouseHeld  = false;
         isDragging   = false;
         pressedSlime = null;
+        AudioManager.Instance?.PlayPop();
         StartCoroutine(PopAnimation());
     }
 

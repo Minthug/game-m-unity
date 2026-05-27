@@ -218,6 +218,12 @@ public static class SceneSetup
         if (milestoneGO.GetComponent<MilestoneManager>() == null)
             milestoneGO.AddComponent<MilestoneManager>();
 
+        // 6-7. AudioManager 생성
+        var existingAudio = Object.FindFirstObjectByType<AudioManager>();
+        var audioGO = existingAudio != null ? existingAudio.gameObject : new GameObject("AudioManager");
+        if (audioGO.GetComponent<AudioManager>() == null)
+            audioGO.AddComponent<AudioManager>();
+
         // 7. HeartRoom 폴더 + RoomManager + UI 생성
         SetupHeartRoom();
         SetupRoomUI();

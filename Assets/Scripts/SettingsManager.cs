@@ -16,20 +16,20 @@ public class SettingsManager : MonoBehaviour
         Instance = this;
         BgmVolume = PlayerPrefs.GetFloat(PREF_BGM, 1f);
         SfxVolume = PlayerPrefs.GetFloat(PREF_SFX, 1f);
-        AudioListener.volume = BgmVolume;
     }
 
     public void SetBgmVolume(float v)
     {
         BgmVolume = Mathf.Clamp01(v);
         PlayerPrefs.SetFloat(PREF_BGM, BgmVolume);
-        AudioListener.volume = BgmVolume;
+        AudioManager.Instance?.SetBgmVolume(BgmVolume);
     }
 
     public void SetSfxVolume(float v)
     {
         SfxVolume = Mathf.Clamp01(v);
         PlayerPrefs.SetFloat(PREF_SFX, SfxVolume);
+        AudioManager.Instance?.SetSfxVolume(SfxVolume);
     }
 
     public void ResetAllData()

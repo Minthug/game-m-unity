@@ -74,6 +74,7 @@ public class MilestoneManager : MonoBehaviour
     {
         _queue.Enqueue(msg);
         if (!_showing) StartCoroutine(ShowNext());
+        AudioManager.Instance?.PlayMilestone();
     }
 
     IEnumerator ShowNext()
