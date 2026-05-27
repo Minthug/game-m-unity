@@ -45,14 +45,7 @@ public class BackgroundThemeManager : MonoBehaviour
         go.transform.SetParent(transform, false);
         bgSr = go.AddComponent<SpriteRenderer>();
         bgSr.sortingOrder = -30; // 파티클(-10)보다 뒤
-
-        // 1×1 흰색 텍스처 → 단색 풀스크린 배경으로 사용
-        var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-        tex.SetPixel(0, 0, Color.white);
-        tex.Apply();
-        bgSr.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
-        bgSr.color  = Color.clear;
-        ScaleBgToScreen();
+        bgSr.color = Color.clear;
 
         var saved = PlayerPrefs.GetString(PREF_ACTIVE, "");
         if (!string.IsNullOrEmpty(saved)) ApplyTheme(saved, persist: false);
@@ -61,10 +54,30 @@ public class BackgroundThemeManager : MonoBehaviour
     void ScaleBgToScreen()
     {
         var cam = Camera.main;
-        if (cam == null || bgSr == null) return;
-        float h = cam.orthographicSize * 2f * 1.1f;
-        float w = h * cam.aspect;
-        bgSr.transform.localScale = new Vector3(w, h, 1f);
+        if (cam == null || bgSr == null || bgSr.sprite == null) return;
+        float h    = cam.orthographicSize * 2f * 1.1f;
+        float w    = h * cam.aspect;
+        var   sp   = bgSr.sprite;
+        float natW = sp.rect.width  / sp.pixelsPerUnit;
+        float natH = sp.rect.height / sp.pixelsPerUnit;
+        bgSr.transform.localScale = new Vector3(w / natW, h / natH, 1f);
+    }
+
+    // 세로 그라디언트 텍스처 생성 (top = 화면 위쪽)
+    static Sprite MakeGradientSprite(Color top, Color bottom, int h = 256)
+    {
+        var tex = new Texture2D(2, h, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode   = TextureWrapMode.Clamp;
+        for (int y = 0; y < h; y++)
+        {
+            float t = (float)y / (h - 1);
+            var c = Color.Lerp(bottom, top, t);
+            tex.SetPixel(0, y, c);
+            tex.SetPixel(1, y, c);
+        }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, 2, h), new Vector2(0.5f, 0.5f), 1f);
     }
 
     public bool IsUnlocked(string themeId)
@@ -90,7 +103,6 @@ public class BackgroundThemeManager : MonoBehaviour
         activeThemeId = themeId;
         if (bgSr != null)
         {
-            // bgSprite가 있으면 그걸 쓰고, 없으면 단색 풀스크린 배경
             if (t.bgSprite != null)
             {
                 bgSr.sprite = t.bgSprite;
@@ -98,8 +110,11 @@ public class BackgroundThemeManager : MonoBehaviour
             }
             else
             {
-                var c = t.bgColor;
-                bgSr.color = new Color(c.r, c.g, c.b, 0.88f);
+                // 상단/하단 색으로 그라디언트 생성 (alpha=0.92)
+                var top    = new Color(t.bgColor.r,       t.bgColor.g,       t.bgColor.b,       0.92f);
+                var bottom = new Color(t.bgColorBottom.r, t.bgColorBottom.g, t.bgColorBottom.b, 0.92f);
+                bgSr.sprite = MakeGradientSprite(top, bottom);
+                bgSr.color  = Color.white;
             }
             ScaleBgToScreen();
         }

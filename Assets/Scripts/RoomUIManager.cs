@@ -83,6 +83,22 @@ public class RoomUIManager : MonoBehaviour
             tmp.font = KorFont;
     }
 
+    static Sprite MakeGradientSprite(Color top, Color bottom, int h = 64)
+    {
+        var tex = new Texture2D(2, h, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode   = TextureWrapMode.Clamp;
+        for (int y = 0; y < h; y++)
+        {
+            float t = (float)y / (h - 1);
+            var c = Color.Lerp(bottom, top, t);
+            tex.SetPixel(0, y, c);
+            tex.SetPixel(1, y, c);
+        }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, 2, h), new Vector2(0.5f, 0.5f), 1f);
+    }
+
     // ── 상점 열기/닫기 ─────────────────────────────────────────────
 
     public void OpenShop()
@@ -280,9 +296,13 @@ public class RoomUIManager : MonoBehaviour
         bool isUnlocked = BackgroundThemeManager.Instance?.IsUnlocked(theme.themeId) ?? false;
         bool isActive   = BackgroundThemeManager.Instance?.IsActive(theme.themeId) ?? false;
 
-        // 카드 배경 = 테마 색상 (프리뷰)
+        // 카드 배경 = 테마 그라디언트 프리뷰
         var bg = btn.GetComponent<Image>();
-        if (bg != null) { bg.sprite = null; bg.color = theme.bgColor; }
+        if (bg != null)
+        {
+            bg.sprite = MakeGradientSprite(theme.bgColor, theme.bgColorBottom, 64);
+            bg.color  = Color.white;
+        }
 
         // 카드 루트 Button은 raycast만 막지 않도록 비활성화
         var rootBtn = btn.GetComponent<Button>();

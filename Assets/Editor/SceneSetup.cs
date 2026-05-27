@@ -462,7 +462,7 @@ public static class SceneSetup
         var openRect   = openBtnGO.GetComponent<RectTransform>();
         openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 0f);
         openRect.pivot     = new Vector2(1f, 0f);
-        openRect.anchoredPosition = new Vector2(-24f, 24f);
+        openRect.anchoredPosition = new Vector2(-24f, 160f);
         openRect.sizeDelta        = new Vector2(160f, 52f);
 
         // ── 상점 패널 (하단에서 슬라이드) ───────────────────────
@@ -753,25 +753,27 @@ public static class SceneSetup
         System.IO.Directory.CreateDirectory(dir);
         AssetDatabase.Refresh();
 
-        CreateBgTheme(dir, "default",     "기본 배경",   "#0A0A0F", adUnlock: false, defaultUnlocked: true);
-        CreateBgTheme(dir, "dawn_purple", "새벽 보라",   "#200A40", adUnlock: true,  defaultUnlocked: false);
-        CreateBgTheme(dir, "deep_sea",    "심해",        "#001838", adUnlock: true,  defaultUnlocked: false);
-        CreateBgTheme(dir, "sunset",      "석양 노을",   "#380A00", adUnlock: true,  defaultUnlocked: false);
-        CreateBgTheme(dir, "forest",      "달빛 숲",     "#041E08", adUnlock: true,  defaultUnlocked: false);
-        CreateBgTheme(dir, "rose_night",  "장미빛 밤",   "#280018", adUnlock: true,  defaultUnlocked: false);
+        //                id             displayName   top        bottom     adUnlock  defaultUnlocked
+        CreateBgTheme(dir, "default",     "기본 배경",  "#0A0A0F", "#0A0A0F", false,    true);
+        CreateBgTheme(dir, "dawn_purple", "새벽 보라",  "#3D1080", "#06000F", true,     false);
+        CreateBgTheme(dir, "deep_sea",    "심해",       "#005080", "#000615", true,     false);
+        CreateBgTheme(dir, "sunset",      "석양 노을",  "#A03800", "#1E0028", true,     false);
+        CreateBgTheme(dir, "forest",      "달빛 숲",    "#0E4020", "#000A03", true,     false);
+        CreateBgTheme(dir, "rose_night",  "장미빛 밤",  "#6B1040", "#100008", true,     false);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[Game-M] 기본 배경 테마 에셋 생성 완료 (Assets/Resources/BackgroundThemes/)");
     }
 
-    static void CreateBgTheme(string dir, string id, string name, string hex,
+    static void CreateBgTheme(string dir, string id, string name,
+                               string hexTop, string hexBottom,
                                bool adUnlock, bool defaultUnlocked)
     {
         var path = $"{dir}/{id}.asset";
-        ColorUtility.TryParseHtmlString(hex, out var color);
+        ColorUtility.TryParseHtmlString(hexTop,    out var colorTop);
+        ColorUtility.TryParseHtmlString(hexBottom, out var colorBottom);
 
-        // 이미 있으면 색상/이름만 업데이트, 없으면 새로 생성
         var t = AssetDatabase.LoadAssetAtPath<BackgroundTheme>(path);
         if (t == null)
         {
@@ -781,7 +783,8 @@ public static class SceneSetup
 
         t.themeId         = id;
         t.displayName     = name;
-        t.bgColor         = color;
+        t.bgColor         = colorTop;
+        t.bgColorBottom   = colorBottom;
         t.isAdUnlock      = adUnlock;
         t.defaultUnlocked = defaultUnlocked;
         EditorUtility.SetDirty(t);
