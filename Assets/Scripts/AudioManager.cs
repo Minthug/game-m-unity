@@ -11,10 +11,27 @@ public class AudioManager : MonoBehaviour
 
     readonly Dictionary<string, AudioClip> _clips = new();
 
+    // Setup Scene을 실행하지 않아도 런타임에 자동 생성
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void AutoCreate()
+    {
+        if (Instance != null) return;
+        var go = new GameObject("AudioManager");
+        go.AddComponent<AudioManager>();
+        Debug.Log("[AudioManager] 자동 생성됨 (Setup Scene 미실행 대비)");
+    }
+
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
+
+        // AudioListener가 씬에 없으면 추가 (카메라에 없을 경우 대비)
+        if (FindFirstObjectByType<AudioListener>() == null)
+        {
+            gameObject.AddComponent<AudioListener>();
+            Debug.LogWarning("[AudioManager] AudioListener 없음 — AudioManager에 임시 추가. Setup Scene을 실행하세요.");
+        }
 
         _sfxSource = gameObject.AddComponent<AudioSource>();
         _sfxSource.playOnAwake = false;
@@ -23,10 +40,14 @@ public class AudioManager : MonoBehaviour
         _bgmSource.playOnAwake = false;
         _bgmSource.loop = true;
 
-        foreach (var clip in Resources.LoadAll<AudioClip>("Sounds"))
+        var clips = Resources.LoadAll<AudioClip>("Sounds");
+        foreach (var clip in clips)
             _clips[clip.name] = clip;
 
-        Debug.Log($"[AudioManager] {_clips.Count}개 클립 로드: {string.Join(", ", _clips.Keys)}");
+        if (_clips.Count == 0)
+            Debug.LogWarning("[AudioManager] Assets/Resources/Sounds/ 에 클립 없음");
+        else
+            Debug.Log($"[AudioManager] {_clips.Count}개 클립 로드: {string.Join(", ", _clips.Keys)}");
     }
 
     void Start()
@@ -71,12 +92,15 @@ public class AudioManager : MonoBehaviour
         foreach (var kv in _clips)
             if (kv.Key.Contains(nameFragment)) { clip = kv.Value; break; }
 
+        // fragment 매칭 실패 → 첫 번째 클립 fallback
+        if (clip == null)
+            foreach (var kv in _clips) { clip = kv.Value; break; }
+
         if (clip == null)
         {
-            // fragment 없으면 첫 번째 클립 fallback
-            foreach (var kv in _clips) { clip = kv.Value; break; }
+            Debug.LogWarning($"[AudioManager] 클립 없음 (fragment='{nameFragment}'). Resources/Sounds/ 확인 필요");
+            return;
         }
-        if (clip == null) return;
 
         _sfxSource.pitch  = pitch;
         _sfxSource.volume = _sfxVolume;

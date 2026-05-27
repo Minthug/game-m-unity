@@ -239,6 +239,8 @@ public static class SceneSetup
             Camera.main.clearFlags         = CameraClearFlags.SolidColor;
             Camera.main.orthographic       = true;
             Camera.main.orthographicSize   = 5f;
+            if (Camera.main.GetComponent<AudioListener>() == null)
+                Camera.main.gameObject.AddComponent<AudioListener>();
         }
 
         AssetDatabase.SaveAssets();
@@ -371,6 +373,9 @@ public static class SceneSetup
         cam.depth            = -1;
         ColorUtility.TryParseHtmlString("#0A0A0F", out var bgColor);
         cam.backgroundColor = bgColor;
+        // AudioListener가 없으면 오디오 전체가 무음 — 반드시 필요
+        if (camGO.GetComponent<AudioListener>() == null)
+            camGO.AddComponent<AudioListener>();
 
         // OnboardingManager (UI·파티클은 런타임에 자체 생성)
         var managerGO = new GameObject("OnboardingManager");
