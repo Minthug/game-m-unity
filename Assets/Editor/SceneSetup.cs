@@ -560,9 +560,10 @@ public static class SceneSetup
         bgScrollRect.horizontal = false;
         bgScrollGO.SetActive(false); // 기본적으로 숨김
 
-        // ── 아이템 버튼 프리팹 ────────────────────────────────────
+        // ── 아이템 버튼 프리팹 (한글 폰트 변경 시 강제 재생성) ──────
         const string itemBtnPath = "Assets/HeartRoom/Prefabs/ItemButton.prefab";
-        if (!System.IO.File.Exists(itemBtnPath))
+        if (System.IO.File.Exists(itemBtnPath)) AssetDatabase.DeleteAsset(itemBtnPath);
+        if (true) // 항상 재생성
         {
             var ibGO   = new GameObject("ItemButton");
             var ibImg  = ibGO.AddComponent<Image>();
@@ -617,7 +618,8 @@ public static class SceneSetup
         System.IO.Directory.CreateDirectory("Assets/Backgrounds/Prefabs");
         AssetDatabase.Refresh();
         const string bgBtnPath = "Assets/Backgrounds/Prefabs/BgThemeButton.prefab";
-        if (!System.IO.File.Exists(bgBtnPath))
+        if (System.IO.File.Exists(bgBtnPath)) AssetDatabase.DeleteAsset(bgBtnPath);
+        if (true) // 항상 재생성
         {
             var bgBtnGO  = new GameObject("BgThemeButton");
             var bgBtnImg = bgBtnGO.AddComponent<Image>(); // 카드 전체가 테마 색상 프리뷰
@@ -707,11 +709,17 @@ public static class SceneSetup
         return go;
     }
 
+    static TMP_FontAsset _editorKorFont;
+    static TMP_FontAsset EditorKorFont =>
+        _editorKorFont != null ? _editorKorFont
+            : (_editorKorFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Resources/KoreanFont.asset"));
+
     static GameObject MakeTMP(Transform parent, string name, string text, float size)
     {
         var go  = new GameObject(name);
         go.transform.SetParent(parent, false);
         var tmp = go.AddComponent<TextMeshProUGUI>();
+        if (EditorKorFont != null) tmp.font = EditorKorFont; // 프리팹에 한글 폰트 구워넣기
         tmp.text      = text;
         tmp.fontSize  = size;
         tmp.alignment = TextAlignmentOptions.Center;
