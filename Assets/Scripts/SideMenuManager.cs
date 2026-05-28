@@ -71,17 +71,17 @@ public class SideMenuManager : MonoBehaviour
     {
         var go  = new GameObject("HamburgerBtn"); go.transform.SetParent(parent, false);
         var img = go.AddComponent<Image>();
-        img.color = new Color(0f, 0f, 0f, 0.45f);
+        img.color = new Color(0.28f, 0.10f, 0.60f, 0.75f);
         var btn = go.AddComponent<Button>();
         btn.onClick.AddListener(Toggle);
 
         var rt = go.GetComponent<RectTransform>();
         rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
         rt.pivot     = new Vector2(1f, 1f);
-        rt.sizeDelta        = new Vector2(72f, 72f);
-        rt.anchoredPosition = new Vector2(-16f, -16f);
+        rt.sizeDelta        = new Vector2(110f, 110f);
+        rt.anchoredPosition = new Vector2(-20f, -20f);
 
-        var lbl = MakeTMP(go.transform, "≡", 28f);
+        var lbl = MakeTMP(go.transform, "≡", 38f);
         lbl.rectTransform.anchorMin = Vector2.zero;
         lbl.rectTransform.anchorMax = Vector2.one;
         lbl.rectTransform.offsetMin = lbl.rectTransform.offsetMax = Vector2.zero;

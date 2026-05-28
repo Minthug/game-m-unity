@@ -75,6 +75,7 @@ function detectExpression(text: string): Expression {
 function App() {
   const [text, setText] = useState('');
   const [sendToUnity, setSendToUnity] = useState<SendFn | null>(null);
+  const [isInputOpen, setIsInputOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Unity가 키보드 이벤트를 전역 캡처하는 것을 막음
@@ -101,7 +102,8 @@ function App() {
   }, []);
 
   const handleRequestInput = useCallback((_placeholder: string) => {
-    inputRef.current?.focus();
+    setIsInputOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -123,7 +125,7 @@ function App() {
     }
 
     setText('');
-    inputRef.current?.focus();
+    setIsInputOpen(false);
   }, [text, sendToUnity]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -141,6 +143,17 @@ function App() {
     (document.getElementById('unity-canvas') as HTMLCanvasElement | null)?.focus();
   }, []);
 
+  const openInput = () => {
+    setIsInputOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 80);
+  };
+
+  const closeInput = () => {
+    setIsInputOpen(false);
+    setText('');
+    (document.getElementById('unity-canvas') as HTMLCanvasElement | null)?.focus();
+  };
+
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       <UnityCanvas
@@ -151,66 +164,152 @@ function App() {
         onRequestInput={handleRequestInput}
       />
 
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        padding: '12px 16px',
-        paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
-        background: 'linear-gradient(to top, rgba(6,4,14,0.98) 60%, transparent)',
-        display: 'flex', gap: 8, alignItems: 'flex-end',
-      }}>
-        <textarea
-          ref={inputRef}
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          placeholder="지금 기분이 어때요?"
-          maxLength={200}
-          rows={1}
-          style={{
-            flex: 1,
-            background: 'rgba(255,255,255,0.09)',
-            border: '1.5px solid rgba(255,255,255,0.15)',
-            borderRadius: 20,
-            padding: '14px 18px',
-            color: '#e8e8f0',
-            fontSize: 16,
-            lineHeight: '22px',
-            resize: 'none',
-            outline: 'none',
-            fontFamily: 'inherit',
-            maxHeight: 100,
-            overflowY: 'auto',
-            WebkitAppearance: 'none',
-          } as React.CSSProperties}
-          onInput={e => {
-            const el = e.currentTarget;
-            el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 100) + 'px';
-          }}
-        />
+      {/* 플로팅 버튼 */}
+      {!isInputOpen && (
         <button
-          onClick={handleSubmit}
-          disabled={!text.trim()}
+          onClick={openInput}
           style={{
-            background: text.trim() ? '#7C3AED' : 'rgba(124,58,237,0.25)',
-            border: 'none',
-            borderRadius: 20,
-            padding: '14px 22px',
-            color: text.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
-            fontSize: 16,
-            fontWeight: 700,
-            cursor: text.trim() ? 'pointer' : 'default',
-            whiteSpace: 'nowrap',
-            transition: 'background 0.2s, color 0.2s',
-            minWidth: 80,
+            position: 'fixed',
+            bottom: 'max(36px, env(safe-area-inset-bottom, 36px))',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            background: 'rgba(90, 40, 200, 0.82)',
+            border: '2px solid rgba(180, 150, 255, 0.35)',
+            boxShadow: '0 4px 20px rgba(110, 50, 220, 0.55), 0 0 0 6px rgba(110,50,220,0.12)',
+            fontSize: 30,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             WebkitTapHighlightColor: 'transparent',
+            backdropFilter: 'blur(4px)',
           } as React.CSSProperties}
         >
-          털어내기
+          🫠
         </button>
-      </div>
+      )}
+
+      {/* 입력 패널 오버레이 */}
+      {isInputOpen && (
+        <>
+          {/* 반투명 배경 — 탭하면 닫힘 */}
+          <div
+            onClick={closeInput}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(4, 2, 12, 0.55)',
+              backdropFilter: 'blur(2px)',
+            }}
+          />
+
+          {/* 입력 패널 */}
+          <div style={{
+            position: 'fixed',
+            bottom: 0, left: 0, right: 0,
+            background: 'linear-gradient(180deg, rgba(18,8,40,0.98) 0%, rgba(8,4,20,1) 100%)',
+            borderRadius: '28px 28px 0 0',
+            border: '1px solid rgba(130, 80, 255, 0.25)',
+            borderBottom: 'none',
+            boxShadow: '0 -8px 40px rgba(100, 40, 220, 0.3)',
+            padding: '20px 20px',
+            paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}>
+            {/* 핸들 + 헤더 */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 40, height: 4, borderRadius: 2,
+                background: 'rgba(160, 120, 255, 0.3)',
+              }} />
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+                <span style={{ color: 'rgba(180, 150, 255, 0.9)', fontSize: 14, fontWeight: 600, letterSpacing: 0.3 }}>
+                  지금 기분이 어때요?
+                </span>
+                <button
+                  onClick={closeInput}
+                  style={{
+                    background: 'rgba(255,255,255,0.07)',
+                    border: 'none',
+                    borderRadius: 12,
+                    color: 'rgba(255,255,255,0.45)',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                    cursor: 'pointer',
+                    WebkitTapHighlightColor: 'transparent',
+                  } as React.CSSProperties}
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+
+            {/* 입력창 */}
+            <textarea
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={handleInputFocus}
+              placeholder="지금 느끼는 감정을 뭐든 써봐요"
+              maxLength={200}
+              rows={3}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(140, 90, 255, 0.25)',
+                borderRadius: 16,
+                padding: '16px',
+                color: '#ddd8ff',
+                fontSize: 17,
+                lineHeight: '26px',
+                resize: 'none',
+                outline: 'none',
+                fontFamily: 'inherit',
+                maxHeight: 130,
+                overflowY: 'auto',
+                WebkitAppearance: 'none',
+              } as React.CSSProperties}
+              onInput={e => {
+                const el = e.currentTarget;
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 130) + 'px';
+              }}
+            />
+
+            {/* 전송 버튼 — 풀 너비 */}
+            <button
+              onClick={handleSubmit}
+              disabled={!text.trim()}
+              style={{
+                width: '100%',
+                background: text.trim()
+                  ? 'linear-gradient(135deg, #6D28D9, #8B5CF6)'
+                  : 'rgba(100,60,200,0.15)',
+                border: 'none',
+                borderRadius: 16,
+                padding: '16px',
+                color: text.trim() ? '#fff' : 'rgba(255,255,255,0.2)',
+                fontSize: 17,
+                fontWeight: 700,
+                cursor: text.trim() ? 'pointer' : 'default',
+                letterSpacing: 0.5,
+                transition: 'background 0.2s, box-shadow 0.2s',
+                boxShadow: text.trim() ? '0 6px 24px rgba(109,40,217,0.5)' : 'none',
+                WebkitTapHighlightColor: 'transparent',
+              } as React.CSSProperties}
+            >
+              {text.trim() ? '🫠 털어내기' : '털어내기'}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
