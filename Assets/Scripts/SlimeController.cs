@@ -226,12 +226,13 @@ public class SlimeController : MonoBehaviour
 
     void HandleInput()
     {
-        var mouse = Mouse.current;
-        if (mouse == null) return;
+        // Pointer.current은 마우스와 터치스크린을 모두 통합 (WebGL 모바일 터치 지원)
+        var pointer = Pointer.current;
+        if (pointer == null) return;
 
         Vector2 mouseWorld = GetMouseWorld();
 
-        if (mouse.leftButton.wasPressedThisFrame && pressedSlime == null)
+        if (pointer.press.wasPressedThisFrame && pressedSlime == null)
         {
             var hit = Physics2D.OverlapPoint(mouseWorld);
             if (hit != null && hit.gameObject == gameObject)
@@ -248,7 +249,7 @@ public class SlimeController : MonoBehaviour
             }
         }
 
-        if (isMouseHeld && mouse.leftButton.isPressed)
+        if (isMouseHeld && pointer.press.isPressed)
         {
             if (!isDragging && (mouseWorld - mouseDownPos).magnitude > 0.12f)
             {
@@ -259,7 +260,7 @@ public class SlimeController : MonoBehaviour
                 transform.position = (Vector3)(mouseWorld + dragOffset);
         }
 
-        if (isMouseHeld && mouse.leftButton.wasReleasedThisFrame)
+        if (isMouseHeld && pointer.press.wasReleasedThisFrame)
         {
             if (holdRoutine != null) { StopCoroutine(holdRoutine); holdRoutine = null; }
 
@@ -388,8 +389,8 @@ public class SlimeController : MonoBehaviour
 
     Vector2 GetMouseWorld()
     {
-        Vector2 mp = Mouse.current != null
-            ? Mouse.current.position.ReadValue()
+        Vector2 mp = Pointer.current != null
+            ? Pointer.current.position.ReadValue()
             : (Vector2)Input.mousePosition;
         Vector3 wp = new(mp.x, mp.y, -mainCam.transform.position.z);
         return mainCam.ScreenToWorldPoint(wp);

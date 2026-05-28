@@ -479,8 +479,9 @@ public static class SceneSetup
         var openRect   = openBtnGO.GetComponent<RectTransform>();
         openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 0f);
         openRect.pivot     = new Vector2(1f, 0f);
-        openRect.anchoredPosition = new Vector2(-24f, 160f);
-        openRect.sizeDelta        = new Vector2(160f, 52f);
+        openRect.anchoredPosition = new Vector2(-20f, 220f);
+        openRect.sizeDelta        = new Vector2(220f, 72f);
+        openBtnGO.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20f;
 
         // ── 상점 패널 (하단에서 슬라이드) ───────────────────────
         var panelGO  = new GameObject("ShopPanel");

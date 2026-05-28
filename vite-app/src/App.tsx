@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import UnityCanvas from './UnityCanvas';
 
 type SendFn = (obj: string, method: string, param: string) => void;
@@ -77,6 +77,25 @@ function App() {
   const [sendToUnity, setSendToUnity] = useState<SendFn | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Unity가 키보드 이벤트를 전역 캡처하는 것을 막음
+  // textarea/input에 포커스가 있을 때만 이벤트를 가로챔
+  useEffect(() => {
+    const intercept = (e: KeyboardEvent) => {
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT') {
+        e.stopImmediatePropagation();
+      }
+    };
+    window.addEventListener('keydown',  intercept, true);
+    window.addEventListener('keyup',    intercept, true);
+    window.addEventListener('keypress', intercept, true);
+    return () => {
+      window.removeEventListener('keydown',  intercept, true);
+      window.removeEventListener('keyup',    intercept, true);
+      window.removeEventListener('keypress', intercept, true);
+    };
+  }, []);
+
   const handleReady = useCallback((send: SendFn) => {
     setSendToUnity(() => send);
   }, []);
@@ -134,9 +153,10 @@ function App() {
 
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        padding: '12px 16px 28px',
-        background: 'linear-gradient(to top, rgba(10,10,16,0.97) 70%, transparent)',
-        display: 'flex', gap: 10, alignItems: 'flex-end',
+        padding: '12px 16px',
+        paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
+        background: 'linear-gradient(to top, rgba(6,4,14,0.98) 60%, transparent)',
+        display: 'flex', gap: 8, alignItems: 'flex-end',
       }}>
         <textarea
           ref={inputRef}
@@ -145,47 +165,50 @@ function App() {
           onKeyDown={handleKeyDown}
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
-          placeholder="지금 어떤 기분이에요? 다 털어놔요"
+          placeholder="지금 기분이 어때요?"
           maxLength={200}
           rows={1}
           style={{
             flex: 1,
-            background: 'rgba(255,255,255,0.07)',
-            border: '1.5px solid rgba(255,255,255,0.12)',
-            borderRadius: 16,
-            padding: '13px 16px',
+            background: 'rgba(255,255,255,0.09)',
+            border: '1.5px solid rgba(255,255,255,0.15)',
+            borderRadius: 20,
+            padding: '14px 18px',
             color: '#e8e8f0',
-            fontSize: 15,
+            fontSize: 16,
             lineHeight: '22px',
             resize: 'none',
             outline: 'none',
             fontFamily: 'inherit',
-            maxHeight: 110,
+            maxHeight: 100,
             overflowY: 'auto',
-          }}
+            WebkitAppearance: 'none',
+          } as React.CSSProperties}
           onInput={e => {
             const el = e.currentTarget;
             el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+            el.style.height = Math.min(el.scrollHeight, 100) + 'px';
           }}
         />
         <button
           onClick={handleSubmit}
           disabled={!text.trim()}
           style={{
-            background: text.trim() ? 'rgba(124,58,237,0.9)' : 'rgba(124,58,237,0.3)',
+            background: text.trim() ? '#7C3AED' : 'rgba(124,58,237,0.25)',
             border: 'none',
-            borderRadius: 16,
-            padding: '13px 20px',
-            color: text.trim() ? '#fff' : 'rgba(255,255,255,0.35)',
-            fontSize: 15,
+            borderRadius: 20,
+            padding: '14px 22px',
+            color: text.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
+            fontSize: 16,
             fontWeight: 700,
             cursor: text.trim() ? 'pointer' : 'default',
             whiteSpace: 'nowrap',
             transition: 'background 0.2s, color 0.2s',
-          }}
+            minWidth: 80,
+            WebkitTapHighlightColor: 'transparent',
+          } as React.CSSProperties}
         >
-          털어내기 🫠
+          털어내기
         </button>
       </div>
     </div>

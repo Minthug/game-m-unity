@@ -36,3 +36,5 @@ vite-app/node_modules/
 vite-app/dist/
 vite-app/.env
 vite-app/.env.local
+*.ait
+compile_check.log
