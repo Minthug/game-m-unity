@@ -319,43 +319,71 @@ public class SlimeController : MonoBehaviour
     void Pet()
     {
         StartCoroutine(PetAnimation());
-        for (int i = 0; i < 3; i++) StartCoroutine(FloatHeart(i));
+        int count = Random.Range(4, 7);
+        for (int i = 0; i < count; i++) StartCoroutine(FloatSnowflake(i, count));
         AudioManager.Instance?.PlayPet();
     }
 
     IEnumerator PetAnimation()
     {
-        // 위로 통통 튀기는 squish
         _squishX = 1.18f; _squishY = 0.85f;
         yield return new WaitForSeconds(0.06f);
         _squishX = 0.85f; _squishY = 1.20f;
         yield return new WaitForSeconds(0.06f);
         _squishX = 1.08f; _squishY = 0.94f;
         yield return new WaitForSeconds(0.06f);
-        // ApplyScale Lerp이 자동으로 1f로 복귀
     }
 
-    IEnumerator FloatHeart(int index)
+    // 캐시된 흰 스프라이트 (눈송이 파티클용)
+    static Sprite _snowSprite;
+    static Sprite SnowSprite
     {
-        var go = new GameObject("PetHeart");
-        var heartSr = go.AddComponent<SpriteRenderer>();
-        heartSr.sprite       = sr.sprite;
-        heartSr.color        = SlimeColor;
-        heartSr.sortingOrder = 5;
+        get
+        {
+            if (_snowSprite != null) return _snowSprite;
+            var tex = new Texture2D(8, 8, TextureFormat.RGBA32, false);
+            var px  = new Color[64];
+            for (int i = 0; i < 64; i++) px[i] = Color.white;
+            tex.SetPixels(px);
+            tex.Apply();
+            _snowSprite = Sprite.Create(tex, new Rect(0, 0, 8, 8), new Vector2(0.5f, 0.5f), 8f);
+            return _snowSprite;
+        }
+    }
 
-        float angle    = (index - 1) * 35f * Mathf.Deg2Rad;
-        float spread   = 0.18f;
-        Vector3 origin = transform.position + new Vector3(Mathf.Sin(angle) * spread, 0.25f, 0f);
-        go.transform.position   = origin;
-        go.transform.localScale = Vector3.one * originalSize * 0.32f;
+    IEnumerator FloatSnowflake(int index, int total)
+    {
+        var go     = new GameObject("Snowflake");
+        var snowSr = go.AddComponent<SpriteRenderer>();
+        snowSr.sprite       = SnowSprite;
+        snowSr.color        = new Color(0.78f, 0.94f, 1f, 0f);
+        snowSr.sortingOrder = 5;
 
-        float dur = 0.65f + index * 0.08f;
+        // 슬라임 주변 고르게 퍼지도록 각도 분배
+        float baseAngle  = (index / (float)total) * Mathf.PI * 2f + Random.Range(-0.2f, 0.2f);
+        float spawnDist  = Random.Range(0.05f, 0.20f);
+        Vector3 origin   = transform.position + new Vector3(
+            Mathf.Cos(baseAngle) * spawnDist,
+            Random.Range(-0.05f, 0.15f), 0f);
+
+        go.transform.position = origin;
+        go.transform.localScale = Vector3.one * Random.Range(0.04f, 0.10f);
+        go.transform.rotation   = Quaternion.Euler(0f, 0f, 45f); // 다이아몬드
+
+        float rotSpeed = Random.Range(100f, 240f) * (Random.value > 0.5f ? 1f : -1f);
+        Vector3 vel    = new Vector3(
+            Mathf.Cos(baseAngle) * Random.Range(0.25f, 0.55f),
+            Random.Range(0.40f, 0.80f), 0f);
+        float dur = Random.Range(0.50f, 0.85f);
+
         for (float t = 0f; t < dur; t += Time.deltaTime)
         {
             float p = t / dur;
-            go.transform.position   = origin + new Vector3(Mathf.Sin(angle) * 0.12f * p, 0.55f * p, 0f);
-            go.transform.localScale = Vector3.one * originalSize * 0.32f * (1f - p * 0.6f);
-            heartSr.color = new Color(SlimeColor.r, SlimeColor.g, SlimeColor.b, 1f - p);
+            go.transform.position += vel * Time.deltaTime;
+            go.transform.Rotate(0f, 0f, rotSpeed * Time.deltaTime);
+            // 빠른 페이드인, 느린 페이드아웃
+            float alpha = p < 0.2f ? p / 0.2f : 1f - (p - 0.2f) / 0.8f;
+            snowSr.color = new Color(0.78f, 0.94f, 1f, alpha);
             yield return null;
         }
 
