@@ -319,7 +319,7 @@ public class BackgroundManager : MonoBehaviour
 
     // ── 쓰다듬기 버스트 ──────────────────────────────────────────
 
-    public void SpawnPetBurst(Vector3 pos)
+    public void SpawnPetBurst(Vector3 pos, Color slimeColor)
     {
         var go = new GameObject("PetBurst");
         go.transform.position = pos;
@@ -333,10 +333,12 @@ public class BackgroundManager : MonoBehaviour
         main.startSpeed      = new ParticleSystem.MinMaxCurve(0.8f,  2.2f);
         main.startSize       = new ParticleSystem.MinMaxCurve(0.07f, 0.16f);
         main.startRotation   = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
-        main.startColor      = new ParticleSystem.MinMaxGradient(
-            new Color(0.72f, 0.93f, 1.00f, 0.95f),
-            new Color(1.00f, 1.00f, 1.00f, 1.00f));
-        main.maxParticles    = 14;
+        // 슬라임 색상 → 밝게 보정한 컬러와 흰색 사이 그라데이션
+        var bright = Color.Lerp(slimeColor, Color.white, 0.45f);
+        bright.a   = 0.95f;
+        var white  = new Color(1f, 1f, 1f, 1f);
+        main.startColor   = new ParticleSystem.MinMaxGradient(bright, white);
+        main.maxParticles = 14;
         main.gravityModifier = -0.08f;
 
         var em = ps.emission;

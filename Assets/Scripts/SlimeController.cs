@@ -319,7 +319,7 @@ public class SlimeController : MonoBehaviour
     void Pet()
     {
         StartCoroutine(PetAnimation());
-        BackgroundManager.Instance?.SpawnPetBurst(transform.position);
+        BackgroundManager.Instance?.SpawnPetBurst(transform.position, SlimeColor);
         AudioManager.Instance?.PlayPet();
     }
 
