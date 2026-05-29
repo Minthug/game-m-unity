@@ -587,17 +587,19 @@ public class SideMenuManager : MonoBehaviour
         while (diaryScrollContent.childCount > 0)
             DestroyImmediate(diaryScrollContent.GetChild(0).gameObject);
 
+        BuildWeeklyCard(diaryScrollContent);
+
         var entries = StatsManager.Instance?.GetDiaryEntries();
         if (entries == null || entries.Length == 0)
         {
             var emptyGO = new GameObject("Empty");
             emptyGO.transform.SetParent(diaryScrollContent, false);
             var le = emptyGO.AddComponent<LayoutElement>();
-            le.preferredHeight = 120f;
+            le.preferredHeight = 80f;
             var tmp = emptyGO.AddComponent<TextMeshProUGUI>();
             if (KorFont != null) tmp.font = KorFont;
             tmp.text      = "아직 기록이 없어요";
-            tmp.fontSize  = 14f;
+            tmp.fontSize  = 13f;
             tmp.color     = new Color(0.5f, 0.5f, 0.6f, 1f);
             tmp.alignment = TextAlignmentOptions.Center;
             return;
@@ -605,6 +607,129 @@ public class SideMenuManager : MonoBehaviour
 
         foreach (var entry in entries)
             BuildDiaryCard(diaryScrollContent, entry);
+    }
+
+    void BuildWeeklyCard(RectTransform parent)
+    {
+        var report   = StatsManager.Instance?.GetWeeklyReport();
+        int barCount = (report != null && report.totalCount > 0)
+            ? Mathf.Min(report.breakdown.Count, 5) : 0;
+        float cardH  = barCount > 0 ? 60f + barCount * 32f : 72f;
+
+        var cardGO = new GameObject("WeeklyCard");
+        cardGO.transform.SetParent(parent, false);
+        cardGO.AddComponent<Image>().color = new Color(0.18f, 0.12f, 0.34f, 0.90f);
+        var le = cardGO.AddComponent<LayoutElement>();
+        le.preferredHeight = cardH;
+
+        // 금색 좌측 바
+        var barGO = new GameObject("GoldBar");
+        barGO.transform.SetParent(cardGO.transform, false);
+        barGO.AddComponent<Image>().color = new Color(0.95f, 0.78f, 0.18f, 1f);
+        var barRt = barGO.GetComponent<RectTransform>();
+        barRt.anchorMin = new Vector2(0f, 0f); barRt.anchorMax = new Vector2(0f, 1f);
+        barRt.pivot = new Vector2(0f, 0.5f);
+        barRt.sizeDelta = new Vector2(4f, 0f);
+        barRt.anchoredPosition = Vector2.zero;
+
+        // 헤더
+        var now = System.DateTime.Now;
+        var hdrTmp = MakeTMP(cardGO.transform, "이번 주 감정 리포트", 13f);
+        hdrTmp.fontStyle = FontStyles.Bold;
+        hdrTmp.color     = new Color(0.96f, 0.84f, 0.36f, 1f);
+        hdrTmp.alignment = TextAlignmentOptions.TopLeft;
+        var hdrRt = hdrTmp.rectTransform;
+        hdrRt.anchorMin = new Vector2(0f, 1f); hdrRt.anchorMax = new Vector2(1f, 1f);
+        hdrRt.pivot     = new Vector2(0.5f, 1f);
+        hdrRt.sizeDelta        = new Vector2(0f, 30f);
+        hdrRt.anchoredPosition = Vector2.zero;
+        hdrRt.offsetMin = new Vector2(14f, hdrRt.offsetMin.y);
+
+        if (report == null || report.totalCount == 0)
+        {
+            var emptyTmp = MakeTMP(cardGO.transform, "이번 주 아직 기록이 없어요", 12f);
+            emptyTmp.color     = new Color(0.62f, 0.58f, 0.78f, 1f);
+            emptyTmp.alignment = TextAlignmentOptions.TopLeft;
+            var eRt = emptyTmp.rectTransform;
+            eRt.anchorMin = new Vector2(0f, 1f); eRt.anchorMax = new Vector2(1f, 1f);
+            eRt.pivot     = new Vector2(0.5f, 1f);
+            eRt.sizeDelta        = new Vector2(0f, 26f);
+            eRt.anchoredPosition = new Vector2(0f, -30f);
+            eRt.offsetMin = new Vector2(14f, eRt.offsetMin.y);
+            return;
+        }
+
+        // 총 N번 라인
+        var totalTmp = MakeTMP(cardGO.transform, $"총 {report.totalCount}번 털어냈어요", 12f);
+        totalTmp.color     = new Color(0.74f, 0.70f, 0.90f, 1f);
+        totalTmp.alignment = TextAlignmentOptions.TopLeft;
+        var totRt = totalTmp.rectTransform;
+        totRt.anchorMin = new Vector2(0f, 1f); totRt.anchorMax = new Vector2(1f, 1f);
+        totRt.pivot     = new Vector2(0.5f, 1f);
+        totRt.sizeDelta        = new Vector2(0f, 24f);
+        totRt.anchoredPosition = new Vector2(0f, -30f);
+        totRt.offsetMin = new Vector2(14f, totRt.offsetMin.y);
+
+        // 바 차트
+        int maxCnt = report.breakdown[0].count;
+        float rowY = -56f;
+        for (int i = 0; i < Mathf.Min(report.breakdown.Count, 5); i++)
+        {
+            var (expr, cnt) = report.breakdown[i];
+            BuildBarRow(cardGO.transform, expr, cnt, maxCnt, rowY);
+            rowY -= 32f;
+        }
+    }
+
+    void BuildBarRow(Transform parent, string expr, int count, int maxCount, float y)
+    {
+        var rowGO = new GameObject($"Row_{expr}");
+        rowGO.transform.SetParent(parent, false);
+        var rowRt = rowGO.AddComponent<RectTransform>();
+        rowRt.anchorMin = new Vector2(0f, 1f); rowRt.anchorMax = new Vector2(1f, 1f);
+        rowRt.pivot     = new Vector2(0.5f, 1f);
+        rowRt.sizeDelta        = new Vector2(0f, 26f);
+        rowRt.anchoredPosition = new Vector2(0f, y);
+        rowRt.offsetMin = new Vector2(14f, rowRt.offsetMin.y);
+        rowRt.offsetMax = new Vector2(-14f, rowRt.offsetMax.y);
+
+        // 감정 이름
+        var nameTmp = MakeTMP(rowGO.transform, ExprKorean(expr), 11f);
+        nameTmp.color     = new Color(0.80f, 0.78f, 0.95f, 1f);
+        nameTmp.alignment = TextAlignmentOptions.MidlineLeft;
+        var nameRt = nameTmp.rectTransform;
+        nameRt.anchorMin = new Vector2(0f, 0f); nameRt.anchorMax = new Vector2(0f, 1f);
+        nameRt.pivot     = new Vector2(0f, 0.5f);
+        nameRt.sizeDelta        = new Vector2(58f, 0f);
+        nameRt.anchoredPosition = Vector2.zero;
+
+        // 바 배경
+        var bgGO = new GameObject("BG");
+        bgGO.transform.SetParent(rowGO.transform, false);
+        bgGO.AddComponent<Image>().color = new Color(1f, 1f, 1f, 0.07f);
+        var bgRt = bgGO.GetComponent<RectTransform>();
+        bgRt.anchorMin = new Vector2(0f, 0.15f); bgRt.anchorMax = new Vector2(1f, 0.85f);
+        bgRt.offsetMin = new Vector2(62f, 0f);
+        bgRt.offsetMax = new Vector2(-38f, 0f);
+
+        // 바 채우기
+        var fillGO = new GameObject("Fill");
+        fillGO.transform.SetParent(bgGO.transform, false);
+        fillGO.AddComponent<Image>().color = ExprColor(expr);
+        var fillRt = fillGO.GetComponent<RectTransform>();
+        fillRt.anchorMin = Vector2.zero;
+        fillRt.anchorMax = new Vector2((float)count / maxCount, 1f);
+        fillRt.offsetMin = fillRt.offsetMax = Vector2.zero;
+
+        // 횟수
+        var cntTmp = MakeTMP(rowGO.transform, $"{count}회", 11f);
+        cntTmp.color     = new Color(0.65f, 0.62f, 0.80f, 1f);
+        cntTmp.alignment = TextAlignmentOptions.MidlineRight;
+        var cntRt = cntTmp.rectTransform;
+        cntRt.anchorMin = new Vector2(1f, 0f); cntRt.anchorMax = new Vector2(1f, 1f);
+        cntRt.pivot     = new Vector2(1f, 0.5f);
+        cntRt.sizeDelta        = new Vector2(34f, 0f);
+        cntRt.anchoredPosition = Vector2.zero;
     }
 
     void BuildDiaryCard(RectTransform parent, StatsManager.DiaryEntry entry)

@@ -121,6 +121,34 @@ public class StatsManager : MonoBehaviour
         return LoadDiary().entries.ToArray();
     }
 
+    public class WeeklyReportData
+    {
+        public int totalCount;
+        public List<(string expression, int count)> breakdown = new();
+    }
+
+    public WeeklyReportData GetWeeklyReport()
+    {
+        long weekAgo = ColorUtil.NowMs() - 7L * 24 * 60 * 60 * 1000;
+        var entries  = GetDiaryEntries();
+        var counts   = new Dictionary<string, int>();
+        int total    = 0;
+
+        foreach (var e in entries)
+        {
+            if (e.timestamp < weekAgo) continue;
+            total++;
+            counts.TryGetValue(e.expression, out int c);
+            counts[e.expression] = c + 1;
+        }
+
+        var report = new WeeklyReportData { totalCount = total };
+        foreach (var kv in counts)
+            report.breakdown.Add((kv.Key, kv.Value));
+        report.breakdown.Sort((a, b) => b.count.CompareTo(a.count));
+        return report;
+    }
+
     DiaryList LoadDiary()
     {
         var json = PlayerPrefs.GetString(PREF_DIARY, "");
