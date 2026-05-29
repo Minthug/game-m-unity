@@ -475,13 +475,13 @@ public static class SceneSetup
         // EventSystem은 Setup() 최상단에서 처리
 
         // ── 상점 열기 버튼 (우하단) ──────────────────────────────
-        var openBtnGO  = MakeButton(canvasGO.transform, "OpenShopBtn", "방 꾸미기");
+        var openBtnGO  = MakeButton(canvasGO.transform, "OpenShopBtn", "방꾸미기");
         var openRect   = openBtnGO.GetComponent<RectTransform>();
-        openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 0f);
-        openRect.pivot     = new Vector2(1f, 0f);
-        openRect.anchoredPosition = new Vector2(-20f, 220f);
-        openRect.sizeDelta        = new Vector2(220f, 72f);
-        openBtnGO.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20f;
+        openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 1f);
+        openRect.pivot     = new Vector2(1f, 1f);
+        openRect.anchoredPosition = new Vector2(-20f, -250f);
+        openRect.sizeDelta        = new Vector2(110f, 110f);
+        openBtnGO.GetComponentInChildren<TextMeshProUGUI>().fontSize = 15f;
 
         // ── 상점 패널 (하단에서 슬라이드) ───────────────────────
         var panelGO  = new GameObject("ShopPanel");

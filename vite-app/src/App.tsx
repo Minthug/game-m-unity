@@ -164,31 +164,32 @@ function App() {
         onRequestInput={handleRequestInput}
       />
 
-      {/* 플로팅 버튼 */}
+      {/* 플로팅 버튼 — 우측 스택 3번째 */}
       {!isInputOpen && (
         <button
           onClick={openInput}
           style={{
             position: 'fixed',
-            bottom: 'max(36px, env(safe-area-inset-bottom, 36px))',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 64,
-            height: 64,
-            borderRadius: 32,
-            background: 'rgba(90, 40, 200, 0.82)',
-            border: '2px solid rgba(180, 150, 255, 0.35)',
-            boxShadow: '0 4px 20px rgba(110, 50, 220, 0.55), 0 0 0 6px rgba(110,50,220,0.12)',
-            fontSize: 30,
+            right: 20,
+            top: 'calc(env(safe-area-inset-top, 0px) + 155px)',
+            width: 110,
+            height: 110,
+            borderRadius: 16,
+            background: 'rgba(72, 30, 170, 0.85)',
+            border: '1.5px solid rgba(180, 140, 255, 0.30)',
+            boxShadow: '0 4px 16px rgba(100, 40, 220, 0.45)',
             cursor: 'pointer',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
+            gap: 4,
             WebkitTapHighlightColor: 'transparent',
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(6px)',
           } as React.CSSProperties}
         >
-          🫠
+          <span style={{ fontSize: 30, lineHeight: 1 }}>🫠</span>
+          <span style={{ fontSize: 12, color: 'rgba(220, 200, 255, 0.9)', fontWeight: 600, letterSpacing: 0.2 }}>털어내기</span>
         </button>
       )}
 

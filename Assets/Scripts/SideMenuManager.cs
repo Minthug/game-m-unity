@@ -79,7 +79,7 @@ public class SideMenuManager : MonoBehaviour
         rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
         rt.pivot     = new Vector2(1f, 1f);
         rt.sizeDelta        = new Vector2(110f, 110f);
-        rt.anchoredPosition = new Vector2(-20f, -20f);
+        rt.anchoredPosition = new Vector2(-20f, -120f);
 
         var lbl = MakeTMP(go.transform, "≡", 38f);
         lbl.rectTransform.anchorMin = Vector2.zero;
