@@ -694,7 +694,7 @@ public static class SceneSetup
             var bgLockRt  = bgLockGO.GetComponent<RectTransform>();
             bgLockRt.anchorMin = Vector2.zero; bgLockRt.anchorMax = Vector2.one;
             bgLockRt.offsetMin = bgLockRt.offsetMax = Vector2.zero;
-            var bgLockIcon = MakeTMP(bgLockGO.transform, "LockIcon", "🔒", 20f);
+            var bgLockIcon = MakeTMP(bgLockGO.transform, "LockIcon", "잠금", 14f);
             var bliRt = bgLockIcon.GetComponent<RectTransform>();
             bliRt.anchorMin = new Vector2(0f, 0.35f); bliRt.anchorMax = new Vector2(1f, 0.65f);
             bliRt.offsetMin = bliRt.offsetMax = Vector2.zero;

@@ -87,7 +87,7 @@ public class SideMenuManager : MonoBehaviour
         rt.sizeDelta        = new Vector2(110f, 110f);
         rt.anchoredPosition = new Vector2(-20f, -120f);
 
-        var lbl = MakeTMP(go.transform, "≡", 38f);
+        var lbl = MakeTMP(go.transform, "메뉴", 22f);
         lbl.rectTransform.anchorMin = Vector2.zero;
         lbl.rectTransform.anchorMax = Vector2.one;
         lbl.rectTransform.offsetMin = lbl.rectTransform.offsetMax = Vector2.zero;
@@ -107,7 +107,7 @@ public class SideMenuManager : MonoBehaviour
         rt.sizeDelta        = new Vector2(110f, 110f);
         rt.anchoredPosition = new Vector2(-20f, -380f);
 
-        var lbl = MakeTMP(go.transform, "⚙", 36f);
+        var lbl = MakeTMP(go.transform, "설정", 22f);
         lbl.rectTransform.anchorMin = Vector2.zero;
         lbl.rectTransform.anchorMax = Vector2.one;
         lbl.rectTransform.offsetMin = lbl.rectTransform.offsetMax = Vector2.zero;
@@ -160,7 +160,7 @@ public class SideMenuManager : MonoBehaviour
         closeRt.pivot     = new Vector2(1f, 0.5f);
         closeRt.sizeDelta = new Vector2(60f, 0f);
         closeRt.anchoredPosition = new Vector2(-8f, 0f);
-        var closeLbl = MakeTMP(closeGO.transform, "✕", 22f);
+        var closeLbl = MakeTMP(closeGO.transform, "X", 22f);
         closeLbl.rectTransform.anchorMin = Vector2.zero;
         closeLbl.rectTransform.anchorMax = Vector2.one;
         closeLbl.rectTransform.offsetMin = closeLbl.rectTransform.offsetMax = Vector2.zero;
@@ -248,7 +248,7 @@ public class SideMenuManager : MonoBehaviour
         closeRt.pivot     = new Vector2(1f, 0.5f);
         closeRt.sizeDelta        = new Vector2(60f, 0f);
         closeRt.anchoredPosition = new Vector2(-8f, 0f);
-        var closeLbl = MakeTMP(closeGO.transform, "✕", 22f);
+        var closeLbl = MakeTMP(closeGO.transform, "X", 22f);
         closeLbl.rectTransform.anchorMin = Vector2.zero;
         closeLbl.rectTransform.anchorMax = Vector2.one;
         closeLbl.rectTransform.offsetMin = closeLbl.rectTransform.offsetMax = Vector2.zero;
