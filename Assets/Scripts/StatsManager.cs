@@ -1,15 +1,29 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class StatsManager : MonoBehaviour
 {
     public static StatsManager Instance { get; private set; }
 
+    [Serializable]
+    public class DiaryEntry
+    {
+        public string text;
+        public string expression;
+        public long   timestamp;
+    }
+
+    [Serializable]
+    class DiaryList { public List<DiaryEntry> entries = new(); }
+
     const string PREF_TOTAL     = "stats_total";
     const string PREF_TODAY     = "stats_today";
     const string PREF_TODAY_DT  = "stats_today_date";
     const string PREF_STREAK    = "stats_streak";
     const string PREF_LAST_DATE = "stats_last_date";
+    const string PREF_DIARY     = "diary_entries_v1";
+    const int    MAX_DIARY      = 50;
 
     public int TotalCount { get; private set; }
     public int TodayCount { get; private set; }
@@ -86,6 +100,35 @@ public class StatsManager : MonoBehaviour
     public int GetExpressionCount(Expression expression) =>
         PlayerPrefs.GetInt($"stats_expr_{expression.ToString().ToLower()}", 0);
 
+    public void RecordDiary(string text, Expression expression)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+        var list = LoadDiary();
+        list.entries.Insert(0, new DiaryEntry
+        {
+            text       = text.Trim(),
+            expression = expression.ToString().ToLower(),
+            timestamp  = ColorUtil.NowMs(),
+        });
+        if (list.entries.Count > MAX_DIARY)
+            list.entries.RemoveRange(MAX_DIARY, list.entries.Count - MAX_DIARY);
+        PlayerPrefs.SetString(PREF_DIARY, JsonUtility.ToJson(list));
+        PlayerPrefs.Save();
+    }
+
+    public DiaryEntry[] GetDiaryEntries()
+    {
+        return LoadDiary().entries.ToArray();
+    }
+
+    DiaryList LoadDiary()
+    {
+        var json = PlayerPrefs.GetString(PREF_DIARY, "");
+        if (string.IsNullOrEmpty(json)) return new DiaryList();
+        try { return JsonUtility.FromJson<DiaryList>(json) ?? new DiaryList(); }
+        catch { return new DiaryList(); }
+    }
+
     public void ResetStats()
     {
         PlayerPrefs.DeleteKey(PREF_TOTAL);
@@ -93,6 +136,7 @@ public class StatsManager : MonoBehaviour
         PlayerPrefs.DeleteKey(PREF_TODAY_DT);
         PlayerPrefs.DeleteKey(PREF_STREAK);
         PlayerPrefs.DeleteKey(PREF_LAST_DATE);
+        PlayerPrefs.DeleteKey(PREF_DIARY);
         foreach (Expression e in Enum.GetValues(typeof(Expression)))
             PlayerPrefs.DeleteKey($"stats_expr_{e.ToString().ToLower()}");
         PlayerPrefs.Save();

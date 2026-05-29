@@ -96,6 +96,8 @@ public class SlimeManager : MonoBehaviour
         int stage = (req.stage >= 1 && req.stage <= 3) ? req.stage : 1;
 
         StatsManager.Instance?.RecordSlime(expression);
+        if (!string.IsNullOrWhiteSpace(req.text))
+            StatsManager.Instance?.RecordDiary(req.text, expression);
         SpawnSlime(req.id ?? $"slime-{System.DateTime.Now.Ticks}", req.text, expression, color, stage);
     }
 

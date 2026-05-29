@@ -26,9 +26,12 @@ public class SideMenuManager : MonoBehaviour
     // 탭
     GameObject     settingsContent;
     GameObject     statsContent;
+    GameObject     diaryContent;
+    RectTransform  diaryScrollContent;
     Button         tabSettingsBtn;
     Button         tabStatsBtn;
-    enum Tab { Settings, Stats }
+    Button         tabDiaryBtn;
+    enum Tab { Settings, Stats, Diary }
     Tab currentTab = Tab.Settings;
 
     TMP_FontAsset _korFont;
@@ -118,6 +121,7 @@ public class SideMenuManager : MonoBehaviour
         BuildTabBar(go.transform);
         BuildSettingsContent(go.transform);
         BuildStatsContent(go.transform);
+        BuildDiaryContent(go.transform);
 
         SwitchTab(Tab.Settings);
     }
@@ -173,6 +177,7 @@ public class SideMenuManager : MonoBehaviour
 
         tabSettingsBtn = MakeTabButton(go.transform, "설정", () => SwitchTab(Tab.Settings));
         tabStatsBtn    = MakeTabButton(go.transform, "통계", () => SwitchTab(Tab.Stats));
+        tabDiaryBtn    = MakeTabButton(go.transform, "일기", () => SwitchTab(Tab.Diary));
     }
 
     Button MakeTabButton(Transform parent, string label, UnityEngine.Events.UnityAction onClick)
@@ -464,6 +469,163 @@ public class SideMenuManager : MonoBehaviour
         return (valLbl, dotImg);
     }
 
+    // ── 일기 탭 ──────────────────────────────────────────────────
+
+    void BuildDiaryContent(Transform parent)
+    {
+        var scrollGO = new GameObject("ScrollView_Diary");
+        scrollGO.transform.SetParent(parent, false);
+        var scrollRect = scrollGO.AddComponent<ScrollRect>();
+        var scrollRt   = scrollGO.GetComponent<RectTransform>();
+        scrollRt.anchorMin = new Vector2(0f, 0f);
+        scrollRt.anchorMax = new Vector2(1f, 1f);
+        scrollRt.offsetMin = new Vector2(0f, 0f);
+        scrollRt.offsetMax = new Vector2(0f, -132f);
+
+        var vpGO = new GameObject("Viewport");
+        vpGO.transform.SetParent(scrollGO.transform, false);
+        vpGO.AddComponent<RectMask2D>();
+        var vpRt = vpGO.GetComponent<RectTransform>();
+        vpRt.anchorMin = Vector2.zero;
+        vpRt.anchorMax = Vector2.one;
+        vpRt.offsetMin = vpRt.offsetMax = Vector2.zero;
+
+        var contentGO = new GameObject("Content");
+        contentGO.transform.SetParent(vpGO.transform, false);
+        var contentRt = contentGO.AddComponent<RectTransform>();
+        contentRt.anchorMin = new Vector2(0f, 1f);
+        contentRt.anchorMax = new Vector2(1f, 1f);
+        contentRt.pivot     = new Vector2(0.5f, 1f);
+        contentRt.sizeDelta = Vector2.zero;
+
+        var vlg = contentGO.AddComponent<VerticalLayoutGroup>();
+        vlg.spacing               = 8f;
+        vlg.padding               = new RectOffset(12, 12, 12, 12);
+        vlg.childControlHeight    = true;
+        vlg.childForceExpandHeight = false;
+        vlg.childControlWidth     = true;
+        vlg.childForceExpandWidth = true;
+        contentGO.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        scrollRect.content    = contentRt;
+        scrollRect.viewport   = vpRt;
+        scrollRect.horizontal = false;
+
+        diaryScrollContent = contentRt;
+        diaryContent = scrollGO;
+        diaryContent.SetActive(false);
+    }
+
+    void RefreshDiary()
+    {
+        if (diaryScrollContent == null) return;
+
+        while (diaryScrollContent.childCount > 0)
+            DestroyImmediate(diaryScrollContent.GetChild(0).gameObject);
+
+        var entries = StatsManager.Instance?.GetDiaryEntries();
+        if (entries == null || entries.Length == 0)
+        {
+            var emptyGO = new GameObject("Empty");
+            emptyGO.transform.SetParent(diaryScrollContent, false);
+            var le = emptyGO.AddComponent<LayoutElement>();
+            le.preferredHeight = 120f;
+            var tmp = emptyGO.AddComponent<TextMeshProUGUI>();
+            if (KorFont != null) tmp.font = KorFont;
+            tmp.text      = "아직 기록이 없어요";
+            tmp.fontSize  = 14f;
+            tmp.color     = new Color(0.5f, 0.5f, 0.6f, 1f);
+            tmp.alignment = TextAlignmentOptions.Center;
+            return;
+        }
+
+        foreach (var entry in entries)
+            BuildDiaryCard(diaryScrollContent, entry);
+    }
+
+    void BuildDiaryCard(RectTransform parent, StatsManager.DiaryEntry entry)
+    {
+        var cardGO = new GameObject("DiaryCard");
+        cardGO.transform.SetParent(parent, false);
+        var cardImg = cardGO.AddComponent<Image>();
+        cardImg.color = new Color(1f, 1f, 1f, 0.05f);
+        var le = cardGO.AddComponent<LayoutElement>();
+        le.preferredHeight = 84f;
+
+        // 좌측 감정 색상 바
+        var barGO = new GameObject("Bar");
+        barGO.transform.SetParent(cardGO.transform, false);
+        var barImg = barGO.AddComponent<Image>();
+        barImg.color = ExprColor(entry.expression);
+        var barRt = barGO.GetComponent<RectTransform>();
+        barRt.anchorMin = new Vector2(0f, 0f);
+        barRt.anchorMax = new Vector2(0f, 1f);
+        barRt.pivot     = new Vector2(0f, 0.5f);
+        barRt.sizeDelta        = new Vector2(4f, 0f);
+        barRt.anchoredPosition = Vector2.zero;
+
+        // 감정명 + 시간
+        var hdrTmp = MakeTMP(cardGO.transform,
+            $"{ExprKorean(entry.expression)}  ·  {FormatTime(entry.timestamp)}", 11f);
+        hdrTmp.color     = new Color(0.60f, 0.60f, 0.72f, 1f);
+        hdrTmp.alignment = TextAlignmentOptions.TopLeft;
+        var hdrRt = hdrTmp.rectTransform;
+        hdrRt.anchorMin = new Vector2(0f, 1f);
+        hdrRt.anchorMax = new Vector2(1f, 1f);
+        hdrRt.pivot     = new Vector2(0.5f, 1f);
+        hdrRt.sizeDelta        = new Vector2(0f, 26f);
+        hdrRt.anchoredPosition = Vector2.zero;
+        hdrRt.offsetMin = new Vector2(14f, hdrRt.offsetMin.y);
+
+        // 본문 텍스트
+        var preview = entry.text.Length > 52 ? entry.text.Substring(0, 49) + "…" : entry.text;
+        var txtTmp  = MakeTMP(cardGO.transform, preview, 13f);
+        txtTmp.color              = new Color(0.90f, 0.88f, 1f, 0.92f);
+        txtTmp.alignment          = TextAlignmentOptions.TopLeft;
+        txtTmp.enableWordWrapping = true;
+        var txtRt = txtTmp.rectTransform;
+        txtRt.anchorMin = new Vector2(0f, 0f);
+        txtRt.anchorMax = new Vector2(1f, 1f);
+        txtRt.offsetMin = new Vector2(14f, 8f);
+        txtRt.offsetMax = new Vector2(-8f, -26f);
+    }
+
+    static Color ExprColor(string expr) => expr switch
+    {
+        "angry"     => new Color(0.86f, 0.15f, 0.15f),
+        "sad"       => new Color(0.15f, 0.39f, 0.92f),
+        "happy"     => new Color(0.58f, 0.22f, 0.90f),
+        "surprised" => new Color(0.58f, 0.20f, 0.92f),
+        "fear"      => new Color(0.31f, 0.27f, 0.90f),
+        "disgust"   => new Color(0.09f, 0.64f, 0.29f),
+        "contempt"  => new Color(0.39f, 0.46f, 0.55f),
+        _           => new Color(0.42f, 0.45f, 0.50f),
+    };
+
+    static string ExprKorean(string expr) => expr switch
+    {
+        "angry"     => "분노",
+        "sad"       => "슬픔",
+        "happy"     => "기쁨",
+        "surprised" => "놀람",
+        "fear"      => "두려움",
+        "disgust"   => "혐오",
+        "contempt"  => "경멸",
+        _           => "무감정",
+    };
+
+    static string FormatTime(long ms)
+    {
+        var epoch = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
+        var dt    = epoch.AddMilliseconds(ms).ToLocalTime();
+        string today     = System.DateTime.Now.ToString("yyyy-MM-dd");
+        string yesterday = System.DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+        string date      = dt.ToString("yyyy-MM-dd");
+        if (date == today)     return dt.ToString("오늘 HH:mm");
+        if (date == yesterday) return dt.ToString("어제 HH:mm");
+        return dt.ToString("M월 d일 HH:mm");
+    }
+
     // ── 탭 전환 ──────────────────────────────────────────────────
 
     void SwitchTab(Tab tab)
@@ -471,13 +633,16 @@ public class SideMenuManager : MonoBehaviour
         currentTab = tab;
         settingsContent?.SetActive(tab == Tab.Settings);
         statsContent?.SetActive(tab == Tab.Stats);
+        diaryContent?.SetActive(tab == Tab.Diary);
 
         var active   = new Color(0.45f, 0.22f, 0.93f, 1f);
         var inactive = new Color(0.20f, 0.20f, 0.26f, 1f);
         SetBtnColor(tabSettingsBtn, tab == Tab.Settings ? active : inactive);
         SetBtnColor(tabStatsBtn,    tab == Tab.Stats    ? active : inactive);
+        SetBtnColor(tabDiaryBtn,    tab == Tab.Diary    ? active : inactive);
 
-        if (tab == Tab.Stats) RefreshStats();
+        if (tab == Tab.Stats)  RefreshStats();
+        if (tab == Tab.Diary)  RefreshDiary();
     }
 
     static void SetBtnColor(Button btn, Color c)
