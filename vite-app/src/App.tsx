@@ -164,14 +164,14 @@ function App() {
         onRequestInput={handleRequestInput}
       />
 
-      {/* 플로팅 버튼 — 우측 스택 3번째 */}
+      {/* 플로팅 버튼 — 우측 스택 4번째 (≡ 통계/일기, 방꾸미기, ⚙ 설정 아래) */}
       {!isInputOpen && (
         <button
           onClick={openInput}
           style={{
             position: 'fixed',
             right: 20,
-            top: 'calc(env(safe-area-inset-top, 0px) + 155px)',
+            top: 'calc(env(safe-area-inset-top, 0px) + 285px)',
             width: 110,
             height: 110,
             borderRadius: 16,

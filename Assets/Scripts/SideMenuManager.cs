@@ -12,10 +12,6 @@ public class SideMenuManager : MonoBehaviour
     GameObject     backdrop;
     bool           isOpen;
 
-    // 설정
-    Slider bgmSlider;
-    Slider sfxSlider;
-
     // 통계
     TextMeshProUGUI   totalLabel;
     TextMeshProUGUI   todayLabel;
@@ -24,15 +20,20 @@ public class SideMenuManager : MonoBehaviour
     Image[]           exprDots;
 
     // 탭
-    GameObject     settingsContent;
     GameObject     statsContent;
     GameObject     diaryContent;
     RectTransform  diaryScrollContent;
-    Button         tabSettingsBtn;
     Button         tabStatsBtn;
     Button         tabDiaryBtn;
-    enum Tab { Settings, Stats, Diary }
-    Tab currentTab = Tab.Settings;
+    enum Tab { Stats, Diary }
+    Tab currentTab = Tab.Stats;
+
+    // 설정 오버레이
+    RectTransform settingsOverlay;
+    GameObject    settingsBackdrop;
+    bool          isSettingsOpen;
+    Slider        bgmSlider;
+    Slider        sfxSlider;
 
     TMP_FontAsset _korFont;
     TMP_FontAsset KorFont => _korFont != null ? _korFont
@@ -66,8 +67,10 @@ public class SideMenuManager : MonoBehaviour
         canvasGO.AddComponent<GraphicRaycaster>();
 
         BuildHamburgerButton(canvasGO.transform);
+        BuildGearButton(canvasGO.transform);
         BuildBackdrop(canvasGO.transform);
         BuildSidePanel(canvasGO.transform);
+        BuildSettingsOverlay(canvasGO.transform);
     }
 
     void BuildHamburgerButton(Transform parent)
@@ -88,6 +91,106 @@ public class SideMenuManager : MonoBehaviour
         lbl.rectTransform.anchorMin = Vector2.zero;
         lbl.rectTransform.anchorMax = Vector2.one;
         lbl.rectTransform.offsetMin = lbl.rectTransform.offsetMax = Vector2.zero;
+    }
+
+    void BuildGearButton(Transform parent)
+    {
+        var go  = new GameObject("GearBtn"); go.transform.SetParent(parent, false);
+        var img = go.AddComponent<Image>();
+        img.color = new Color(0.28f, 0.10f, 0.60f, 0.75f);
+        var btn = go.AddComponent<Button>();
+        btn.onClick.AddListener(ToggleSettings);
+
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot     = new Vector2(1f, 1f);
+        rt.sizeDelta        = new Vector2(110f, 110f);
+        rt.anchoredPosition = new Vector2(-20f, -380f);
+
+        var lbl = MakeTMP(go.transform, "⚙", 36f);
+        lbl.rectTransform.anchorMin = Vector2.zero;
+        lbl.rectTransform.anchorMax = Vector2.one;
+        lbl.rectTransform.offsetMin = lbl.rectTransform.offsetMax = Vector2.zero;
+    }
+
+    void BuildSettingsOverlay(Transform parent)
+    {
+        // 반투명 배경
+        var bdGO = new GameObject("SettingsBackdrop"); bdGO.transform.SetParent(parent, false);
+        bdGO.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.5f);
+        var bdBtn = bdGO.AddComponent<Button>();
+        bdBtn.onClick.AddListener(CloseSettings);
+        bdBtn.transition = Selectable.Transition.None;
+        Stretch(bdGO.GetComponent<RectTransform>());
+        settingsBackdrop = bdGO;
+        settingsBackdrop.SetActive(false);
+
+        // 바텀시트 패널
+        var panelGO = new GameObject("SettingsPanel"); panelGO.transform.SetParent(parent, false);
+        panelGO.AddComponent<Image>().color = new Color(0.07f, 0.07f, 0.10f, 0.97f);
+        var panelRt = panelGO.GetComponent<RectTransform>();
+        panelRt.anchorMin        = new Vector2(0f, 0f);
+        panelRt.anchorMax        = new Vector2(1f, 0f);
+        panelRt.pivot            = new Vector2(0.5f, 0f);
+        panelRt.sizeDelta        = new Vector2(0f, 420f);
+        panelRt.anchoredPosition = new Vector2(0f, -420f); // 화면 밖
+        settingsOverlay = panelRt;
+
+        // 헤더
+        var hdrGO = new GameObject("Header"); hdrGO.transform.SetParent(panelGO.transform, false);
+        var hdrRt = hdrGO.AddComponent<RectTransform>();
+        hdrRt.anchorMin = new Vector2(0f, 1f); hdrRt.anchorMax = new Vector2(1f, 1f);
+        hdrRt.pivot     = new Vector2(0.5f, 1f);
+        hdrRt.sizeDelta = new Vector2(0f, 72f);
+        hdrRt.anchoredPosition = Vector2.zero;
+
+        var titleLbl = MakeTMP(hdrGO.transform, "설정", 20f);
+        titleLbl.fontStyle = FontStyles.Bold;
+        titleLbl.alignment = TextAlignmentOptions.MidlineLeft;
+        titleLbl.rectTransform.anchorMin = new Vector2(0f, 0f);
+        titleLbl.rectTransform.anchorMax = new Vector2(0.75f, 1f);
+        titleLbl.rectTransform.offsetMin = new Vector2(24f, 0f);
+        titleLbl.rectTransform.offsetMax = Vector2.zero;
+
+        var closeGO = new GameObject("CloseBtn"); closeGO.transform.SetParent(hdrGO.transform, false);
+        closeGO.AddComponent<Image>().color = Color.clear;
+        closeGO.AddComponent<Button>().onClick.AddListener(CloseSettings);
+        var closeRt = closeGO.GetComponent<RectTransform>();
+        closeRt.anchorMin = new Vector2(1f, 0f); closeRt.anchorMax = new Vector2(1f, 1f);
+        closeRt.pivot     = new Vector2(1f, 0.5f);
+        closeRt.sizeDelta = new Vector2(60f, 0f);
+        closeRt.anchoredPosition = new Vector2(-8f, 0f);
+        var closeLbl = MakeTMP(closeGO.transform, "✕", 22f);
+        closeLbl.rectTransform.anchorMin = Vector2.zero;
+        closeLbl.rectTransform.anchorMax = Vector2.one;
+        closeLbl.rectTransform.offsetMin = closeLbl.rectTransform.offsetMax = Vector2.zero;
+
+        // 콘텐츠 (헤더 아래)
+        var contentGO = new GameObject("Content"); contentGO.transform.SetParent(panelGO.transform, false);
+        var contentRt = contentGO.AddComponent<RectTransform>();
+        contentRt.anchorMin = new Vector2(0f, 0f);
+        contentRt.anchorMax = new Vector2(1f, 1f);
+        contentRt.offsetMin = new Vector2(0f, 0f);
+        contentRt.offsetMax = new Vector2(0f, -72f);
+
+        float y = -24f;
+        y = AddSliderRow(contentGO.transform, "BGM 볼륨", y,
+            SettingsManager.Instance?.BgmVolume ?? 1f,
+            v => SettingsManager.Instance?.SetBgmVolume(v),
+            out bgmSlider);
+        y = AddSliderRow(contentGO.transform, "효과음 볼륨", y,
+            SettingsManager.Instance?.SfxVolume ?? 1f,
+            v => SettingsManager.Instance?.SetSfxVolume(v),
+            out sfxSlider);
+        y -= 24f;
+        AddDivider(contentGO.transform, y);
+        y -= 20f;
+        AddResetButton(contentGO.transform, y, "전체 데이터 초기화",
+            new Color(0.55f, 0.08f, 0.08f, 1f),
+            () => {
+                StatsManager.Instance?.ResetStats();
+                SettingsManager.Instance?.ResetAllData();
+            });
     }
 
     void BuildBackdrop(Transform parent)
@@ -119,11 +222,10 @@ public class SideMenuManager : MonoBehaviour
 
         BuildPanelHeader(go.transform);
         BuildTabBar(go.transform);
-        BuildSettingsContent(go.transform);
         BuildStatsContent(go.transform);
         BuildDiaryContent(go.transform);
 
-        SwitchTab(Tab.Settings);
+        SwitchTab(Tab.Stats);
     }
 
     void BuildPanelHeader(Transform parent)
@@ -175,9 +277,8 @@ public class SideMenuManager : MonoBehaviour
         hlg.childForceExpandWidth  = true;
         hlg.childForceExpandHeight = true;
 
-        tabSettingsBtn = MakeTabButton(go.transform, "설정", () => SwitchTab(Tab.Settings));
-        tabStatsBtn    = MakeTabButton(go.transform, "통계", () => SwitchTab(Tab.Stats));
-        tabDiaryBtn    = MakeTabButton(go.transform, "일기", () => SwitchTab(Tab.Diary));
+        tabStatsBtn = MakeTabButton(go.transform, "통계", () => SwitchTab(Tab.Stats));
+        tabDiaryBtn = MakeTabButton(go.transform, "일기", () => SwitchTab(Tab.Diary));
     }
 
     Button MakeTabButton(Transform parent, string label, UnityEngine.Events.UnityAction onClick)
@@ -194,43 +295,6 @@ public class SideMenuManager : MonoBehaviour
         lbl.rectTransform.anchorMax = Vector2.one;
         lbl.rectTransform.offsetMin = lbl.rectTransform.offsetMax = Vector2.zero;
         return btn;
-    }
-
-    void BuildSettingsContent(Transform parent)
-    {
-        settingsContent = new GameObject("SettingsContent");
-        settingsContent.transform.SetParent(parent, false);
-        var rt = settingsContent.AddComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0f, 0f); rt.anchorMax = new Vector2(1f, 1f);
-        rt.offsetMin = new Vector2(0f, 0f);
-        rt.offsetMax = new Vector2(0f, -132f); // header(80) + tabbar(52)
-
-        float y = -24f;
-
-        // BGM 볼륨
-        y = AddSliderRow(settingsContent.transform, "BGM 볼륨", y,
-            SettingsManager.Instance?.BgmVolume ?? 1f,
-            v => SettingsManager.Instance?.SetBgmVolume(v),
-            out bgmSlider);
-
-        // 효과음 볼륨
-        y = AddSliderRow(settingsContent.transform, "효과음 볼륨", y,
-            SettingsManager.Instance?.SfxVolume ?? 1f,
-            v => SettingsManager.Instance?.SetSfxVolume(v),
-            out sfxSlider);
-
-        // 구분선
-        y -= 24f;
-        AddDivider(settingsContent.transform, y);
-        y -= 20f;
-
-        // 데이터 초기화 버튼
-        AddResetButton(settingsContent.transform, y, "전체 데이터 초기화",
-            new Color(0.55f, 0.08f, 0.08f, 1f),
-            () => {
-                StatsManager.Instance?.ResetStats();
-                SettingsManager.Instance?.ResetAllData();
-            });
     }
 
     float AddSliderRow(Transform parent, string label, float yPos,
@@ -631,18 +695,16 @@ public class SideMenuManager : MonoBehaviour
     void SwitchTab(Tab tab)
     {
         currentTab = tab;
-        settingsContent?.SetActive(tab == Tab.Settings);
         statsContent?.SetActive(tab == Tab.Stats);
         diaryContent?.SetActive(tab == Tab.Diary);
 
         var active   = new Color(0.45f, 0.22f, 0.93f, 1f);
         var inactive = new Color(0.20f, 0.20f, 0.26f, 1f);
-        SetBtnColor(tabSettingsBtn, tab == Tab.Settings ? active : inactive);
-        SetBtnColor(tabStatsBtn,    tab == Tab.Stats    ? active : inactive);
-        SetBtnColor(tabDiaryBtn,    tab == Tab.Diary    ? active : inactive);
+        SetBtnColor(tabStatsBtn, tab == Tab.Stats  ? active : inactive);
+        SetBtnColor(tabDiaryBtn, tab == Tab.Diary  ? active : inactive);
 
-        if (tab == Tab.Stats)  RefreshStats();
-        if (tab == Tab.Diary)  RefreshDiary();
+        if (tab == Tab.Stats) RefreshStats();
+        if (tab == Tab.Diary) RefreshDiary();
     }
 
     static void SetBtnColor(Button btn, Color c)
@@ -655,6 +717,34 @@ public class SideMenuManager : MonoBehaviour
     // ── 열기/닫기 ────────────────────────────────────────────────
 
     public void Toggle() { if (isOpen) Close(); else Open(); }
+
+    public void ToggleSettings() { if (isSettingsOpen) CloseSettings(); else OpenSettings(); }
+
+    public void OpenSettings()
+    {
+        if (isOpen) Close();
+        isSettingsOpen = true;
+        settingsBackdrop?.SetActive(true);
+        StartCoroutine(AnimateSettings(0f));
+    }
+
+    public void CloseSettings()
+    {
+        isSettingsOpen = false;
+        StartCoroutine(AnimateSettings(-420f));
+    }
+
+    IEnumerator AnimateSettings(float targetY)
+    {
+        float startY = settingsOverlay.anchoredPosition.y;
+        for (float t = 0f; t < 1f; t += Time.deltaTime / ANIM_SECONDS)
+        {
+            settingsOverlay.anchoredPosition = new Vector2(0f, Mathf.Lerp(startY, targetY, t));
+            yield return null;
+        }
+        settingsOverlay.anchoredPosition = new Vector2(0f, targetY);
+        if (!isSettingsOpen) settingsBackdrop?.SetActive(false);
+    }
 
     public void Open()
     {
