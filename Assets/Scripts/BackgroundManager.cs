@@ -317,6 +317,56 @@ public class BackgroundManager : MonoBehaviour
         return go;
     }
 
+    // ── 쓰다듬기 버스트 ──────────────────────────────────────────
+
+    public void SpawnPetBurst(Vector3 pos)
+    {
+        var go = new GameObject("PetBurst");
+        go.transform.position = pos;
+
+        var ps   = go.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.loop            = false;
+        main.duration        = 0.25f;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startLifetime   = new ParticleSystem.MinMaxCurve(0.45f, 0.85f);
+        main.startSpeed      = new ParticleSystem.MinMaxCurve(0.8f,  2.2f);
+        main.startSize       = new ParticleSystem.MinMaxCurve(0.07f, 0.16f);
+        main.startRotation   = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+        main.startColor      = new ParticleSystem.MinMaxGradient(
+            new Color(0.72f, 0.93f, 1.00f, 0.95f),
+            new Color(1.00f, 1.00f, 1.00f, 1.00f));
+        main.maxParticles    = 14;
+        main.gravityModifier = -0.08f;
+
+        var em = ps.emission;
+        em.rateOverTime = 0f;
+        em.SetBursts(new[] { new ParticleSystem.Burst(0f, 6, 10) });
+
+        var shape = ps.shape;
+        shape.enabled   = true;
+        shape.shapeType = ParticleSystemShapeType.Circle;
+        shape.radius    = 0.18f;
+
+        var rot = ps.rotationOverLifetime;
+        rot.enabled = true;
+        rot.z = new ParticleSystem.MinMaxCurve(-4f, 4f);
+
+        var vel = ps.velocityOverLifetime;
+        vel.enabled = true;
+        vel.x = new ParticleSystem.MinMaxCurve(-0.4f, 0.4f);
+        vel.y = new ParticleSystem.MinMaxCurve(0.3f,  0.9f);
+
+        SetFade(ps);
+
+        var r = go.GetComponent<ParticleSystemRenderer>();
+        r.material     = GetStarMat();
+        r.sortingOrder = 5;
+
+        ps.Play();
+        Destroy(go, 2f);
+    }
+
     // ── 유틸 ────────────────────────────────────────────────────
 
     Material _particleMat;
