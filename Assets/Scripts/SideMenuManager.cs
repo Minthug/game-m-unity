@@ -39,7 +39,7 @@ public class SideMenuManager : MonoBehaviour
     TMP_FontAsset KorFont => _korFont != null ? _korFont
         : (_korFont = Resources.Load<TMP_FontAsset>("KoreanFont"));
 
-    const float PANEL_WIDTH  = 380f;
+    const float PANEL_WIDTH  = 270f;
     const float ANIM_SECONDS = 0.22f;
 
     void Awake()
@@ -226,8 +226,8 @@ public class SideMenuManager : MonoBehaviour
         img.color = new Color(0.07f, 0.07f, 0.10f, 0.97f);
 
         var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = new Vector2(1f, 0f);
-        rt.anchorMax = new Vector2(1f, 1f);
+        rt.anchorMin = new Vector2(1f, 0.10f);
+        rt.anchorMax = new Vector2(1f, 0.90f);
         rt.pivot     = new Vector2(1f, 0.5f);
         rt.sizeDelta        = new Vector2(PANEL_WIDTH, 0f);
         rt.anchoredPosition = new Vector2(PANEL_WIDTH, 0f); // 화면 밖 (닫힌 상태)
@@ -267,7 +267,7 @@ public class SideMenuManager : MonoBehaviour
         closeLbl.rectTransform.offsetMin = closeLbl.rectTransform.offsetMax = Vector2.zero;
 
         // 타이틀
-        var titleLbl = MakeTMP(go.transform, "메뉴", 20f);
+        var titleLbl = MakeTMP(go.transform, "메뉴", 28f);
         titleLbl.fontStyle = FontStyles.Bold;
         titleLbl.rectTransform.anchorMin = new Vector2(0f, 0f);
         titleLbl.rectTransform.anchorMax = new Vector2(0.75f, 1f);
@@ -302,7 +302,7 @@ public class SideMenuManager : MonoBehaviour
         var btn = go.AddComponent<Button>();
         btn.onClick.AddListener(onClick);
         btn.transition = Selectable.Transition.None;
-        var lbl = MakeTMP(go.transform, label, 15f);
+        var lbl = MakeTMP(go.transform, label, 20f);
         lbl.fontStyle = FontStyles.Bold;
         lbl.rectTransform.anchorMin = Vector2.zero;
         lbl.rectTransform.anchorMax = Vector2.one;
@@ -318,7 +318,7 @@ public class SideMenuManager : MonoBehaviour
         var lblTmp = lblGO.AddComponent<TextMeshProUGUI>();
         if (KorFont != null) lblTmp.font = KorFont;
         lblTmp.text      = label;
-        lblTmp.fontSize  = 14f;
+        lblTmp.fontSize  = 18f;
         lblTmp.color     = new Color(0.75f, 0.75f, 0.82f, 1f);
         lblTmp.alignment = TextAlignmentOptions.MidlineLeft;
         var lblRt = lblGO.GetComponent<RectTransform>();
@@ -417,7 +417,7 @@ public class SideMenuManager : MonoBehaviour
         rt.pivot     = new Vector2(0.5f, 1f);
         rt.sizeDelta        = new Vector2(-40f, 48f);
         rt.anchoredPosition = new Vector2(0f, yPos);
-        var lbl = MakeTMP(go.transform, label, 13f);
+        var lbl = MakeTMP(go.transform, label, 17f);
         lbl.rectTransform.anchorMin = Vector2.zero;
         lbl.rectTransform.anchorMax = Vector2.one;
         lbl.rectTransform.offsetMin = lbl.rectTransform.offsetMax = Vector2.zero;
@@ -443,7 +443,7 @@ public class SideMenuManager : MonoBehaviour
         y -= 28f;
 
         // 감정 도감 헤더
-        var hdr = MakeTMP(statsContent.transform, "감정 도감", 13f);
+        var hdr = MakeTMP(statsContent.transform, "감정 도감", 17f);
         hdr.color     = new Color(0.6f, 0.6f, 0.7f, 1f);
         hdr.alignment = TextAlignmentOptions.MidlineLeft;
         var hdrRt = hdr.rectTransform;
@@ -488,7 +488,7 @@ public class SideMenuManager : MonoBehaviour
         var bgImg = go.AddComponent<Image>();
         bgImg.color = new Color(1f, 1f, 1f, 0.04f);
 
-        var nameLbl = MakeTMP(go.transform, labelText, 13f);
+        var nameLbl = MakeTMP(go.transform, labelText, 17f);
         nameLbl.color     = new Color(0.65f, 0.65f, 0.75f, 1f);
         nameLbl.alignment = TextAlignmentOptions.MidlineLeft;
         nameLbl.rectTransform.anchorMin = new Vector2(0f, 0f);
@@ -496,7 +496,7 @@ public class SideMenuManager : MonoBehaviour
         nameLbl.rectTransform.offsetMin = new Vector2(16f, 0f);
         nameLbl.rectTransform.offsetMax = Vector2.zero;
 
-        var valLbl = MakeTMP(go.transform, valueText, 22f);
+        var valLbl = MakeTMP(go.transform, valueText, 26f);
         valLbl.fontStyle  = FontStyles.Bold;
         valLbl.alignment  = TextAlignmentOptions.MidlineRight;
         valLbl.rectTransform.anchorMin = new Vector2(0.5f, 0f);
@@ -527,7 +527,7 @@ public class SideMenuManager : MonoBehaviour
         dotRt.sizeDelta        = new Vector2(10f, 10f);
         dotRt.anchoredPosition = new Vector2(8f, 0f);
 
-        var nameLbl = MakeTMP(go.transform, exprName, 13f);
+        var nameLbl = MakeTMP(go.transform, exprName, 16f);
         nameLbl.color     = new Color(0.75f, 0.75f, 0.82f, 1f);
         nameLbl.alignment = TextAlignmentOptions.MidlineLeft;
         nameLbl.rectTransform.anchorMin = new Vector2(0f, 0f);
@@ -535,7 +535,7 @@ public class SideMenuManager : MonoBehaviour
         nameLbl.rectTransform.offsetMin = new Vector2(26f, 0f);
         nameLbl.rectTransform.offsetMax = Vector2.zero;
 
-        var valLbl = MakeTMP(go.transform, "미발견", 13f);
+        var valLbl = MakeTMP(go.transform, "미발견", 16f);
         valLbl.color      = new Color(0.4f, 0.4f, 0.45f, 1f);
         valLbl.fontStyle  = FontStyles.Bold;
         valLbl.alignment  = TextAlignmentOptions.MidlineRight;
@@ -612,7 +612,7 @@ public class SideMenuManager : MonoBehaviour
             var tmp = emptyGO.AddComponent<TextMeshProUGUI>();
             if (KorFont != null) tmp.font = KorFont;
             tmp.text      = "아직 기록이 없어요";
-            tmp.fontSize  = 13f;
+            tmp.fontSize  = 17f;
             tmp.color     = new Color(0.5f, 0.5f, 0.6f, 1f);
             tmp.alignment = TextAlignmentOptions.Center;
             return;
@@ -647,7 +647,7 @@ public class SideMenuManager : MonoBehaviour
 
         // 헤더
         var now = System.DateTime.Now;
-        var hdrTmp = MakeTMP(cardGO.transform, "이번 주 감정 리포트", 13f);
+        var hdrTmp = MakeTMP(cardGO.transform, "이번 주 감정 리포트", 17f);
         hdrTmp.fontStyle = FontStyles.Bold;
         hdrTmp.color     = new Color(0.96f, 0.84f, 0.36f, 1f);
         hdrTmp.alignment = TextAlignmentOptions.TopLeft;
@@ -660,7 +660,7 @@ public class SideMenuManager : MonoBehaviour
 
         if (report == null || report.totalCount == 0)
         {
-            var emptyTmp = MakeTMP(cardGO.transform, "이번 주 아직 기록이 없어요", 12f);
+            var emptyTmp = MakeTMP(cardGO.transform, "이번 주 아직 기록이 없어요", 15f);
             emptyTmp.color     = new Color(0.62f, 0.58f, 0.78f, 1f);
             emptyTmp.alignment = TextAlignmentOptions.TopLeft;
             var eRt = emptyTmp.rectTransform;
@@ -673,7 +673,7 @@ public class SideMenuManager : MonoBehaviour
         }
 
         // 총 N번 라인
-        var totalTmp = MakeTMP(cardGO.transform, $"총 {report.totalCount}번 털어냈어요", 12f);
+        var totalTmp = MakeTMP(cardGO.transform, $"총 {report.totalCount}번 털어냈어요", 15f);
         totalTmp.color     = new Color(0.74f, 0.70f, 0.90f, 1f);
         totalTmp.alignment = TextAlignmentOptions.TopLeft;
         var totRt = totalTmp.rectTransform;
@@ -707,7 +707,7 @@ public class SideMenuManager : MonoBehaviour
         rowRt.offsetMax = new Vector2(-14f, rowRt.offsetMax.y);
 
         // 감정 이름
-        var nameTmp = MakeTMP(rowGO.transform, ExprKorean(expr), 11f);
+        var nameTmp = MakeTMP(rowGO.transform, ExprKorean(expr), 14f);
         nameTmp.color     = new Color(0.80f, 0.78f, 0.95f, 1f);
         nameTmp.alignment = TextAlignmentOptions.MidlineLeft;
         var nameRt = nameTmp.rectTransform;
@@ -735,7 +735,7 @@ public class SideMenuManager : MonoBehaviour
         fillRt.offsetMin = fillRt.offsetMax = Vector2.zero;
 
         // 횟수
-        var cntTmp = MakeTMP(rowGO.transform, $"{count}회", 11f);
+        var cntTmp = MakeTMP(rowGO.transform, $"{count}회", 14f);
         cntTmp.color     = new Color(0.65f, 0.62f, 0.80f, 1f);
         cntTmp.alignment = TextAlignmentOptions.MidlineRight;
         var cntRt = cntTmp.rectTransform;
@@ -768,7 +768,7 @@ public class SideMenuManager : MonoBehaviour
 
         // 감정명 + 시간
         var hdrTmp = MakeTMP(cardGO.transform,
-            $"{ExprKorean(entry.expression)}  ·  {FormatTime(entry.timestamp)}", 11f);
+            $"{ExprKorean(entry.expression)}  ·  {FormatTime(entry.timestamp)}", 14f);
         hdrTmp.color     = new Color(0.60f, 0.60f, 0.72f, 1f);
         hdrTmp.alignment = TextAlignmentOptions.TopLeft;
         var hdrRt = hdrTmp.rectTransform;
@@ -781,7 +781,7 @@ public class SideMenuManager : MonoBehaviour
 
         // 본문 텍스트
         var preview = entry.text.Length > 52 ? entry.text.Substring(0, 49) + "…" : entry.text;
-        var txtTmp  = MakeTMP(cardGO.transform, preview, 13f);
+        var txtTmp  = MakeTMP(cardGO.transform, preview, 16f);
         txtTmp.color              = new Color(0.90f, 0.88f, 1f, 0.92f);
         txtTmp.alignment          = TextAlignmentOptions.TopLeft;
         txtTmp.enableWordWrapping = true;
