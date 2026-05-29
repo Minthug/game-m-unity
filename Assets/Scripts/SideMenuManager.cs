@@ -95,7 +95,7 @@ public class SideMenuManager : MonoBehaviour
         rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
         rt.pivot     = new Vector2(1f, 0f);
         rt.sizeDelta        = new Vector2(110f, 110f);
-        rt.anchoredPosition = new Vector2(-20f, 647f);
+        rt.anchoredPosition = new Vector2(-20f, 584f);
 
         var lbl = MakeTMP(go.transform, "메뉴", 22f);
         lbl.rectTransform.anchorMin = Vector2.zero;
@@ -115,7 +115,7 @@ public class SideMenuManager : MonoBehaviour
         rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
         rt.pivot     = new Vector2(1f, 0f);
         rt.sizeDelta        = new Vector2(110f, 110f);
-        rt.anchoredPosition = new Vector2(-20f, 395f);
+        rt.anchoredPosition = new Vector2(-20f, 458f);
 
         var lbl = MakeTMP(go.transform, "설정", 22f);
         lbl.rectTransform.anchorMin = Vector2.zero;
