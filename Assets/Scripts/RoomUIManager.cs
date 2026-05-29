@@ -41,8 +41,10 @@ public class RoomUIManager : MonoBehaviour
 
     void Start()
     {
+        // 방꾸미기 버튼 비활성화 (핵심 경험 집중)
+        if (openShopBtn != null) openShopBtn.gameObject.SetActive(false);
+
         // SceneSetup의 AddListener는 씬에 저장 안 되므로 런타임에 연결
-        if (openShopBtn  != null) openShopBtn.onClick.AddListener(OpenShop);
         if (closeShopBtn != null) closeShopBtn.onClick.AddListener(CloseShop);
         if (tabDecorBtn  != null) tabDecorBtn.onClick.AddListener(() => SwitchTab(ShopTab.Decor));
         if (tabBgBtn     != null) tabBgBtn.onClick.AddListener(() => SwitchTab(ShopTab.BgTheme));
