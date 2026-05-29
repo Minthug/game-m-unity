@@ -481,6 +481,7 @@ public static class SceneSetup
         btnSafeGO.AddComponent<SafeAreaFitter>();
 
         var openBtnGO  = MakeButton(btnSafeGO.transform, "OpenShopBtn", "방꾸미기");
+        openBtnGO.SetActive(false); // 방꾸미기 기능 비활성화
         var openRect   = openBtnGO.GetComponent<RectTransform>();
         openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 0f);
         openRect.pivot     = new Vector2(1f, 0f);
