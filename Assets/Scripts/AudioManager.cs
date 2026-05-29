@@ -83,6 +83,7 @@ public class AudioManager : MonoBehaviour
     public void PlayMerge()     => PlaySfx("bubble_pop", 0.72f);
     public void PlaySplit()     => PlaySfx("bubble_pop", 1.25f);
     public void PlayMilestone() => PlaySfx("bubble_pop", 1.8f);
+    public void PlayPet()       => PlaySfx("bubble_pop", 2.0f + Random.Range(-0.1f, 0.1f));
 
     // ── 내부 ───────────────────────────────────────────────────
 

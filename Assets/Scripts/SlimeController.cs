@@ -278,8 +278,13 @@ public class SlimeController : MonoBehaviour
             {
                 float elapsed = Time.time - mouseDownTime;
                 float moved   = (mouseWorld - mouseDownPos).magnitude;
-                if (elapsed < 0.25f && moved < 0.3f && Stage > 1)
-                    SlimeManager.Instance?.SplitSlime(SlimeId);
+                if (moved < 0.3f)
+                {
+                    if (elapsed < 0.25f)
+                        Pet();                                          // 짧은 탭 → 쓰다듬기
+                    else if (Stage > 1)
+                        SlimeManager.Instance?.SplitSlime(SlimeId);    // 중간 홀드 → 분리
+                }
             }
         }
     }
@@ -307,6 +312,54 @@ public class SlimeController : MonoBehaviour
         _squishX = _squishY = 1f;
         if (isMouseHeld && !isDragging)
             TriggerPop();
+    }
+
+    // ── 쓰다듬기 ─────────────────────────────────────────────────
+
+    void Pet()
+    {
+        StartCoroutine(PetAnimation());
+        for (int i = 0; i < 3; i++) StartCoroutine(FloatHeart(i));
+        AudioManager.Instance?.PlayPet();
+    }
+
+    IEnumerator PetAnimation()
+    {
+        // 위로 통통 튀기는 squish
+        _squishX = 1.18f; _squishY = 0.85f;
+        yield return new WaitForSeconds(0.06f);
+        _squishX = 0.85f; _squishY = 1.20f;
+        yield return new WaitForSeconds(0.06f);
+        _squishX = 1.08f; _squishY = 0.94f;
+        yield return new WaitForSeconds(0.06f);
+        // ApplyScale Lerp이 자동으로 1f로 복귀
+    }
+
+    IEnumerator FloatHeart(int index)
+    {
+        var go = new GameObject("PetHeart");
+        var heartSr = go.AddComponent<SpriteRenderer>();
+        heartSr.sprite       = sr.sprite;
+        heartSr.color        = SlimeColor;
+        heartSr.sortingOrder = 5;
+
+        float angle    = (index - 1) * 35f * Mathf.Deg2Rad;
+        float spread   = 0.18f;
+        Vector3 origin = transform.position + new Vector3(Mathf.Sin(angle) * spread, 0.25f, 0f);
+        go.transform.position   = origin;
+        go.transform.localScale = Vector3.one * originalSize * 0.32f;
+
+        float dur = 0.65f + index * 0.08f;
+        for (float t = 0f; t < dur; t += Time.deltaTime)
+        {
+            float p = t / dur;
+            go.transform.position   = origin + new Vector3(Mathf.Sin(angle) * 0.12f * p, 0.55f * p, 0f);
+            go.transform.localScale = Vector3.one * originalSize * 0.32f * (1f - p * 0.6f);
+            heartSr.color = new Color(SlimeColor.r, SlimeColor.g, SlimeColor.b, 1f - p);
+            yield return null;
+        }
+
+        Destroy(go);
     }
 
     // ── 팝 ───────────────────────────────────────────────────────
