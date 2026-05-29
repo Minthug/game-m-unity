@@ -66,8 +66,18 @@ public class SideMenuManager : MonoBehaviour
         scaler.matchWidthOrHeight  = 0.5f;
         canvasGO.AddComponent<GraphicRaycaster>();
 
-        BuildHamburgerButton(canvasGO.transform);
-        BuildGearButton(canvasGO.transform);
+        // Safe Area 컨테이너 — 노치/다이나믹 아일랜드 자동 회피
+        var safeGO = new GameObject("SafeArea");
+        safeGO.transform.SetParent(canvasGO.transform, false);
+        var safeRt = safeGO.AddComponent<RectTransform>();
+        var area   = Screen.safeArea;
+        safeRt.anchorMin = new Vector2(area.x / Screen.width, area.y / Screen.height);
+        safeRt.anchorMax = new Vector2((area.x + area.width) / Screen.width,
+                                       (area.y + area.height) / Screen.height);
+        safeRt.offsetMin = safeRt.offsetMax = Vector2.zero;
+
+        BuildHamburgerButton(safeGO.transform);
+        BuildGearButton(safeGO.transform);
         BuildBackdrop(canvasGO.transform);
         BuildSidePanel(canvasGO.transform);
         BuildSettingsOverlay(canvasGO.transform);
@@ -165,12 +175,15 @@ public class SideMenuManager : MonoBehaviour
         closeLbl.rectTransform.anchorMax = Vector2.one;
         closeLbl.rectTransform.offsetMin = closeLbl.rectTransform.offsetMax = Vector2.zero;
 
-        // 콘텐츠 (헤더 아래)
+        // 콘텐츠 (헤더 아래, 하단 홈 인디케이터 Safe Area 반영)
+        float safeBottom = Screen.safeArea.y > 0
+            ? (Screen.safeArea.y / Screen.height) * 1920f
+            : 40f; // 홈 인디케이터 기본 여백
         var contentGO = new GameObject("Content"); contentGO.transform.SetParent(panelGO.transform, false);
         var contentRt = contentGO.AddComponent<RectTransform>();
         contentRt.anchorMin = new Vector2(0f, 0f);
         contentRt.anchorMax = new Vector2(1f, 1f);
-        contentRt.offsetMin = new Vector2(0f, 0f);
+        contentRt.offsetMin = new Vector2(0f, safeBottom);
         contentRt.offsetMax = new Vector2(0f, -72f);
 
         float y = -24f;

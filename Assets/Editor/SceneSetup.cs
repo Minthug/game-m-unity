@@ -475,7 +475,12 @@ public static class SceneSetup
         // EventSystem은 Setup() 최상단에서 처리
 
         // ── 상점 열기 버튼 (우하단) ──────────────────────────────
-        var openBtnGO  = MakeButton(canvasGO.transform, "OpenShopBtn", "방꾸미기");
+        // Safe Area 컨테이너 — 런타임에 SafeAreaFitter가 조정
+        var btnSafeGO = new GameObject("BtnSafeArea");
+        btnSafeGO.transform.SetParent(canvasGO.transform, false);
+        btnSafeGO.AddComponent<SafeAreaFitter>();
+
+        var openBtnGO  = MakeButton(btnSafeGO.transform, "OpenShopBtn", "방꾸미기");
         var openRect   = openBtnGO.GetComponent<RectTransform>();
         openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 1f);
         openRect.pivot     = new Vector2(1f, 1f);
