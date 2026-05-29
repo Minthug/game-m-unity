@@ -484,7 +484,7 @@ public static class SceneSetup
         var openRect   = openBtnGO.GetComponent<RectTransform>();
         openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 1f);
         openRect.pivot     = new Vector2(1f, 1f);
-        openRect.anchoredPosition = new Vector2(-20f, -250f);
+        openRect.anchoredPosition = new Vector2(-20f, -1289f);
         openRect.sizeDelta        = new Vector2(110f, 110f);
         openBtnGO.GetComponentInChildren<TextMeshProUGUI>().fontSize = 15f;
 
