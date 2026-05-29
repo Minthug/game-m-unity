@@ -92,10 +92,10 @@ public class SideMenuManager : MonoBehaviour
         btn.onClick.AddListener(Toggle);
 
         var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
-        rt.pivot     = new Vector2(1f, 1f);
+        rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
+        rt.pivot     = new Vector2(1f, 0f);
         rt.sizeDelta        = new Vector2(110f, 110f);
-        rt.anchoredPosition = new Vector2(-20f, -1163f);
+        rt.anchoredPosition = new Vector2(-20f, 647f);
 
         var lbl = MakeTMP(go.transform, "메뉴", 22f);
         lbl.rectTransform.anchorMin = Vector2.zero;
@@ -112,10 +112,10 @@ public class SideMenuManager : MonoBehaviour
         btn.onClick.AddListener(ToggleSettings);
 
         var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
-        rt.pivot     = new Vector2(1f, 1f);
+        rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
+        rt.pivot     = new Vector2(1f, 0f);
         rt.sizeDelta        = new Vector2(110f, 110f);
-        rt.anchoredPosition = new Vector2(-20f, -1415f);
+        rt.anchoredPosition = new Vector2(-20f, 395f);
 
         var lbl = MakeTMP(go.transform, "설정", 22f);
         lbl.rectTransform.anchorMin = Vector2.zero;

@@ -482,9 +482,9 @@ public static class SceneSetup
 
         var openBtnGO  = MakeButton(btnSafeGO.transform, "OpenShopBtn", "방꾸미기");
         var openRect   = openBtnGO.GetComponent<RectTransform>();
-        openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 1f);
-        openRect.pivot     = new Vector2(1f, 1f);
-        openRect.anchoredPosition = new Vector2(-20f, -1289f);
+        openRect.anchorMin = openRect.anchorMax = new Vector2(1f, 0f);
+        openRect.pivot     = new Vector2(1f, 0f);
+        openRect.anchoredPosition = new Vector2(-20f, 521f);
         openRect.sizeDelta        = new Vector2(110f, 110f);
         openBtnGO.GetComponentInChildren<TextMeshProUGUI>().fontSize = 15f;
 
